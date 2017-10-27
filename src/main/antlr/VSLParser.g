@@ -20,14 +20,13 @@ program returns [ASD.Program out]
     ;
 
 expression returns [ASD.Expression out]
-    : l=factor PLUS r=expression  { $out = new ASD.AddExpression($l.out, $r.out); }
-    | f=factor { $out = $f.out; }
-    // TODO : that's all?
+    : l=expression PLUS r=factor  { $out = new ASD.AddExpression($l.out, $r.out); }
+    | l=expression MINUS r=factor { $out = new ASD.MinusExpression($l.out, $r.out); }
     ;
-
 factor returns [ASD.Expression out]
     : p=primary { $out = $p.out; }
-    // TODO : that's all?
+    | l=factor TIMES r=primary { /*$out = new ASD.TimesExpression($l.out, $r.out); */}
+    | l=factor DIVIDES r=primary { /*$out = new ASD.DividesExpression($l.out, $r.out); */}
     ;
 
 primary returns [ASD.Expression out]
