@@ -16,20 +16,39 @@ options {
 // TODO : other rules
 
 program returns [ASD.Program out]
-    : e=expression { $out = new ASD.Program($e.out); } // TODO : change when you extend the language
+    : e=expression* EOF { $out = new ASD.Program($e.out); } // TODO : change when you extend the language
     ;
 
 expression returns [ASD.Expression out]
-    : l=expression PLUS r=factor  { $out = new ASD.AddExpression($l.out, $r.out); }
-    | l=expression MINUS r=factor { $out = new ASD.MinusExpression($l.out, $r.out); }
-    ;
-factor returns [ASD.Expression out]
-    : p=primary { $out = $p.out; }
-    | l=factor TIMES r=primary { /*$out = new ASD.TimesExpression($l.out, $r.out); */}
-    | l=factor DIVIDES r=primary { /*$out = new ASD.DividesExpression($l.out, $r.out); */}
+    : <assoc=left>
+      l=expression op=(MUL | SDIV) r=expression { 
+        switch($op.getType()) {
+        case MUL :
+          $out = new ASD.MulExpression($l.out, $r.out);
+          break;
+        case SDIV :
+          $out = new ASD.SignedDivExpression($l.out, $r.out);
+          break;
+        }
+      }
+    | <assoc=left>
+      l=expression op=(ADD | SUB) r=expression {
+        switch($op.getType()) {
+        case ADD :
+          $out = new ASD.AddExpression($l.out, $r.out);
+          break;
+        case SUB :
+          $out = new ASD.SubExpression($l.out, $r.out);
+          break;
+        }
+      }
+    | c=atome {
+        $out = $c.out;
+      }
     ;
 
-primary returns [ASD.Expression out]
+
+atome returns [ASD.Expression out]
     : INTEGER { $out = new ASD.IntegerExpression($INTEGER.int); }
     // TODO : that's all?
     ;

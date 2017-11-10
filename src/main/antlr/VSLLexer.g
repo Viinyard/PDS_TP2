@@ -21,10 +21,11 @@ fragment ASCII  : ~('\n'|'"');
 // keywords
 LP    : '(' ; // Left parenthesis
 RP    : ')' ;
-PLUS      : '+'      ;
-MINUS : '-';
-TIMES : '*';
-DIVIDES : '/';
+
+ADD : '+' ;
+SUB : '-' ;
+MUL : '*' ;
+SDIV : '/' ;
 
 // TODO : other keywords
 

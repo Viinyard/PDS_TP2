@@ -8,7 +8,10 @@ declare i32 @printf(i8* noalias nocapture, ...)
 
 
 define i32 @main() {
-%tmp1 = add i32 3, 1
-ret i32 %tmp1
+%tmp1 = add i32 20, 2
+%tmp2 = add i32 10, %tmp1
+%tmp3 = add i32 8, %tmp2
+%tmp4 = add i32 2, %tmp3
+ret i32 %tmp4
 }
 

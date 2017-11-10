@@ -98,12 +98,88 @@ public class ASD {
       return new RetExpression(leftRet.ir, leftRet.type, result);
     }
   }
-  
-  static public class MinusExpression extends Expression {
+
+  static public class MulExpression extends Expression {
     Expression left;
     Expression right;
 
-    public MinusExpression(Expression left, Expression right) {
+    public MulExpression(Expression left, Expression right) {
+      this.left = left;
+      this.right = right;
+    }
+
+    // Pretty-printer
+    public String pp() {
+      return "(" + left.pp() + " * " + right.pp() + ")";
+    }
+
+    // IR generation
+    public RetExpression toIR() throws TypeException {
+      RetExpression leftRet = left.toIR();
+      RetExpression rightRet = right.toIR();
+
+      // We check if the types mismatches
+      if(!leftRet.type.equals(rightRet.type)) {
+        throw new TypeException("type mismatch: have " + leftRet.type + " and " + rightRet.type);
+      }
+
+      // We base our build on the left generated IR:
+      // append right code
+      leftRet.ir.append(rightRet.ir);
+
+      // allocate a new identifier for the result
+      String result = Utils.newtmp();
+
+      // new add instruction result = left + right
+      Llvm.Instruction add = new Llvm.Mul(leftRet.type.toLlvmType(), leftRet.result, rightRet.result, result);
+
+      // append this instruction
+      leftRet.ir.appendCode(add);
+
+      // return the generated IR, plus the type of this expression
+      // and where to find its result
+      return new RetExpression(leftRet.ir, leftRet.type, result);
+    }
+  }
+
+  static public class SignedDivExpression extends Expression {
+    Expression left;
+    Expression right;
+
+    public SignedDivExpression(Expression left, Expression right) {
+      this.left = left;
+      this.right = right;
+    }
+
+    public String pp() {
+      return "(" + left.pp() + " / " + right.pp() + ")";
+    }
+
+    public RetExpression toIR() throws TypeException {
+      RetExpression leftRet = left.toIR();
+      RetExpression rightRet = right.toIR();
+
+      if(!leftRet.type.equals(rightRet.type)) {
+        throw new TypeException("type mismatch: have " + leftRet.type + " and " + rightRet.type);
+      }
+
+      leftRet.ir.append(rightRet.ir);
+
+      String result = Utils.newtmp();
+
+      Llvm.Instruction add = new Llvm.SignedDiv(leftRet.type.toLlvmType(), leftRet.result, rightRet.result, result);
+
+      leftRet.ir.appendCode(add);
+
+      return new RetExpression(leftRet.ir, leftRet.type, result);
+    }
+  }
+  
+  static public class SubExpression extends Expression {
+    Expression left;
+    Expression right;
+
+    public SubExpression(Expression left, Expression right) {
       this.left = left;
       this.right = right;
     }
@@ -131,7 +207,7 @@ public class ASD {
       String result = Utils.newtmp();
 
       // new add instruction result = left + right
-      Llvm.Instruction add = new Llvm.Minus(leftRet.type.toLlvmType(), leftRet.result, rightRet.result, result);
+      Llvm.Instruction add = new Llvm.Sub(leftRet.type.toLlvmType(), leftRet.result, rightRet.result, result);
 
       // append this instruction
       leftRet.ir.appendCode(add);

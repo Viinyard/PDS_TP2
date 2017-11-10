@@ -90,6 +90,24 @@ public class Llvm {
     public abstract String toString();
   }
 
+  static public class SignedDiv extends Instruction {
+    Type type;
+    String left;
+    String right;
+    String lvalue;
+
+    public SignedDiv(Type type, String left, String right, String lvalue) {
+      this.type = type;
+      this.left = left;
+      this.right = right;
+      this.lvalue = lvalue;
+    }
+
+    public String toString() {
+      return lvalue + " = sdiv " + type + " " + left + ", " + right +  "\n";
+    }
+  }
+
   static public class Add extends Instruction {
     Type type;
     String left;
@@ -107,14 +125,32 @@ public class Llvm {
       return lvalue + " = add " + type + " " + left + ", " + right +  "\n";
     }
   }
-  
-  static public class Minus extends Instruction {
+
+  static public class Mul extends Instruction {
     Type type;
     String left;
     String right;
     String lvalue;
 
-    public Minus(Type type, String left, String right, String lvalue) {
+    public Mul(Type type, String left, String right, String lvalue) {
+      this.type = type;
+      this.left = left;
+      this.right = right;
+      this.lvalue = lvalue;
+    }
+
+    public String toString() {
+      return lvalue + " = mul " + type + " " + left + ", " + right +  "\n";
+    }
+  }
+  
+  static public class Sub extends Instruction {
+    Type type;
+    String left;
+    String right;
+    String lvalue;
+
+    public Sub(Type type, String left, String right, String lvalue) {
       this.type = type;
       this.left = left;
       this.right = right;

@@ -19,8 +19,8 @@ public class VSLLexer extends Lexer {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		WS=1, COMMENT=2, LP=3, RP=4, PLUS=5, MINUS=6, TIMES=7, DIVIDES=8, IDENT=9, 
-		TEXT=10, INTEGER=11;
+		WS=1, COMMENT=2, LP=3, RP=4, ADD=5, SUB=6, MUL=7, SDIV=8, IDENT=9, TEXT=10, 
+		INTEGER=11;
 	public static String[] channelNames = {
 		"DEFAULT_TOKEN_CHANNEL", "HIDDEN"
 	};
@@ -30,16 +30,16 @@ public class VSLLexer extends Lexer {
 	};
 
 	public static final String[] ruleNames = {
-		"WS", "COMMENT", "LETTER", "DIGIT", "ASCII", "LP", "RP", "PLUS", "MINUS", 
-		"TIMES", "DIVIDES", "IDENT", "TEXT", "INTEGER"
+		"WS", "COMMENT", "LETTER", "DIGIT", "ASCII", "LP", "RP", "ADD", "SUB", 
+		"MUL", "SDIV", "IDENT", "TEXT", "INTEGER"
 	};
 
 	private static final String[] _LITERAL_NAMES = {
 		null, null, null, "'('", "')'", "'+'", "'-'", "'*'", "'/'"
 	};
 	private static final String[] _SYMBOLIC_NAMES = {
-		null, "WS", "COMMENT", "LP", "RP", "PLUS", "MINUS", "TIMES", "DIVIDES", 
-		"IDENT", "TEXT", "INTEGER"
+		null, "WS", "COMMENT", "LP", "RP", "ADD", "SUB", "MUL", "SDIV", "IDENT", 
+		"TEXT", "INTEGER"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
