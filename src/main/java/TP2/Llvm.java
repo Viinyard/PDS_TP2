@@ -52,14 +52,14 @@ public class Llvm {
 
       // We create the function main
       // TODO : remove this when you extend the language
-      r.append("define i32 @main() {\n");
+//      r.append("define i32 @main() {\n");
 
 
       for(Instruction inst: code)
         r.append(inst);
 
       // TODO : remove this when you extend the language
-      r.append("}\n");
+//      r.append("}\n");
 
       return r.toString();
     }
@@ -71,6 +71,27 @@ public class Llvm {
   }
 
 
+  static public abstract class ID {
+    String identifiant = "";
+    public ID(String identifiant) {
+      this.identifiant = identifiant;
+    }
+    public abstract String toString();
+  }
+  
+  static public class GlobalID extends ID {
+
+  public GlobalID(String identifiant) {
+    super(identifiant);
+  }
+
+  @Override
+  public String toString() {
+    return "@"+this.identifiant;
+  }
+    
+  }
+  
   // LLVM Types
   static public abstract class Type {
     public abstract String toString();
@@ -81,6 +102,12 @@ public class Llvm {
       return "i32";
     }
   }
+  
+  static public class VoidType extends Type {
+    public String toString() {
+      return "void";
+    }
+  }
 
   // TODO : other types
 
@@ -88,6 +115,33 @@ public class Llvm {
   // LLVM IR Instructions
   static public abstract class Instruction {
     public abstract String toString();
+  }
+
+
+  static public class Fonction extends Instruction {
+    Type type;
+    ID id;
+    List<Instruction> instructions = Llvm.empty();
+
+    public Fonction(Type type, ID id, List<Instruction> instructions) {
+      this.type = type;
+      this.id = id;
+      if(instructions != null) {
+        this.instructions = instructions;
+        if(type instanceof VoidType) {
+          this.instructions.add(new Return(type, ""));
+        }
+      }
+    }
+
+    public String toString() {
+      StringBuilder ret = new StringBuilder("define " + type + " " +id+ "()" + " {\n");
+      for(Instruction i : this.instructions) {
+        ret.append(i);
+      }
+      ret.append("}\n");
+      return ret.toString();
+    }
   }
 
   static public class SignedDiv extends Instruction {

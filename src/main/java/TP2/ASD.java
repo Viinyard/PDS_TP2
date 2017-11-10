@@ -4,36 +4,67 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
+import TP2.Llvm.Instruction;
+
 public class ASD {
   static public class Program {
-    Expression e; // What a program contains. TODO : change when you extend the language
-
-    public Program(Expression e) {
-      this.e = e;
+    List<Fonction> listFonction; // What a program contains. TODO : change when you extend the language
+    
+    public Program(List<Fonction> listFonction) {
+      this.listFonction = listFonction;
     }
 
     // Pretty-printer
     public String pp() {
-      return e.pp();
+      StringBuilder ret = new StringBuilder();
+      for(Fonction f : this.listFonction) {
+        ret.append(f.pp());
+      }
+      return ret.toString();
     }
 
     // IR generation
     public Llvm.IR toIR() throws TypeException {
       // TODO : change when you extend the language
 
+      Llvm.IR ir = new Llvm.IR(Llvm.empty(), Llvm.empty());
       // computes the IR of the expression
-      Expression.RetExpression retExpr = e.toIR();
+      for(Fonction f : this.listFonction) {
+        ir.appendCode(f.toIR());
+      }
       // add a return instruction
-      Llvm.Instruction ret = new Llvm.Return(retExpr.type.toLlvmType(), retExpr.result);
-      retExpr.ir.appendCode(ret);
 
-      return retExpr.ir;
+      return ir;
     }
   }
 
   // All toIR methods returns the IR, plus extra information (synthesized attributes)
   // They can take extra arguments (inherited attributes)
 
+  static public class Fonction {
+    
+    Type type;
+    ID id;
+    List<Instruction> instructions = Llvm.empty();
+    
+    public Fonction(Type type, ID id, List<Instruction> instructions) {
+      this.type = type;
+        this.id = id;
+        if(instructions != null) {
+          this.instructions = instructions;
+        }
+    }
+    
+    public String pp() {
+      return "";
+    }
+    
+    public Llvm.Fonction toIR() {
+      Llvm.Fonction f = new Llvm.Fonction(type.toLlvmType(), id.toLlvmID(), instructions);
+      return f;
+    }
+  }
+  
   static public abstract class Expression {
     public abstract String pp();
     public abstract RetExpression toIR() throws TypeException;
@@ -54,7 +85,7 @@ public class ASD {
       }
     }
   }
-
+  
   // Concrete class for Expression: add case
   static public class AddExpression extends Expression {
     Expression left;
@@ -235,11 +266,53 @@ public class ASD {
       return new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), new IntType(), "" + value);
     }
   }
+  
+  static public abstract class ID {
+    String identifiant = "";
+    public ID(String identifiant) {
+      this.identifiant = identifiant;
+    }
+    public abstract String pp();
+    public abstract Llvm.ID toLlvmID();
+  }
+  
+  static public class GlobalID extends ID {
+
+  public GlobalID(String identifiant) {
+    super(identifiant);
+  }
+
+  @Override
+  public String pp() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Llvm.ID toLlvmID() {
+    return new Llvm.GlobalID(this.identifiant);
+  }
+  }
 
   // Warning: this is the type from VSL+, not the LLVM types!
   static public abstract class Type {
     public abstract String pp();
     public abstract Llvm.Type toLlvmType();
+  }
+  
+  static class VoidType extends Type {
+    public String pp() {
+      return "VOID";
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+      return obj instanceof VoidType;
+    }
+    
+    public Llvm.Type toLlvmType() {
+      return new Llvm.VoidType();
+    }
   }
 
   static class IntType extends Type {

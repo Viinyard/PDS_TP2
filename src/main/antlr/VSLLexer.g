@@ -19,8 +19,13 @@ fragment DIGIT  : '0'..'9' ;
 fragment ASCII  : ~('\n'|'"');
 
 // keywords
-LP    : '(' ; // Left parenthesis
-RP    : ')' ;
+PO    : '(' ; // Left parenthesis
+PF    : ')' ;
+
+FUNC_TYPE : 'FUNC';
+
+VOID_TYPE : 'VOID';
+INT_TYPE : 'INT';
 
 ADD : '+' ;
 SUB : '-' ;

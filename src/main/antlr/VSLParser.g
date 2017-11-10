@@ -12,15 +12,26 @@ options {
   import java.util.Arrays;
 }
 
-
-// TODO : other rules
-
 program returns [ASD.Program out]
-    : e=expression* EOF { $out = new ASD.Program($e.out); } // TODO : change when you extend the language
+  @init {
+    List<ASD.Fonction> fonctions = new ArrayList<ASD.Fonction>();
+  }
+    : (fonction { fonctions.add($fonction.out); })* EOF { $out = new ASD.Program(fonctions); } // TODO : change when you extend the language
     ;
 
+fonction returns [ASD.Fonction out]
+  : FUNC_TYPE type ident PO PF {
+      $out = new ASD.Fonction($type.out, $ident.out, Llvm.empty());
+    }
+  ;
+
 expression returns [ASD.Expression out]
-    : <assoc=left>
+    :
+    PO expression PF {
+      $out = $expression.out;
+    }
+    |
+    <assoc=left>
       l=expression op=(MUL | SDIV) r=expression { 
         switch($op.getType()) {
         case MUL :
@@ -47,6 +58,19 @@ expression returns [ASD.Expression out]
       }
     ;
 
+type returns [ASD.Type out]
+  : INT_TYPE {
+      $out = new ASD.IntType();
+    }
+  |
+    VOID_TYPE {
+      $out = new ASD.VoidType();
+    }
+  ;
+
+ident returns [ASD.ID out]
+  : IDENT { $out = new ASD.GlobalID($IDENT.getText()); }
+  ;
 
 atome returns [ASD.Expression out]
     : INTEGER { $out = new ASD.IntegerExpression($INTEGER.int); }
