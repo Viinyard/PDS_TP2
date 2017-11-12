@@ -15,23 +15,110 @@ options {
 program returns [ASD.Program out]
   @init {
     List<ASD.Fonction> fonctions = new ArrayList<ASD.Fonction>();
+    SymbolTable table = new SymbolTable();
   }
-    : (fonction { fonctions.add($fonction.out); })* EOF { $out = new ASD.Program(fonctions); } // TODO : change when you extend the language
+    : (fonction[table] { fonctions.add($fonction.out); })* EOF { $out = new ASD.Program(fonctions); } // TODO : change when you extend the language
     ;
 
-fonction returns [ASD.Fonction out]
-  : FUNC_TYPE type ident PO PF {
-      $out = new ASD.Fonction($type.out, $ident.out, Llvm.empty());
+fonction [SymbolTable table] returns [ASD.Fonction out]
+  @init {
+    SymbolTable tableFunction = new SymbolTable(table);
+  }
+  : FUNC_TYPE type ident PO PF block[table] {
+      table.add(new SymbolTable.FunctionSymbol($type.out, $ident.text, null, true));
+      $out = new ASD.Fonction($type.out, new ASD.GlobalID($ident.text), $block.out);
     }
   ;
 
-expression returns [ASD.Expression out]
+block [SymbolTable table] returns [List<ASD.Expression> out]
+  @init {
+    List<ASD.Expression> statements = new ArrayList<ASD.Expression>();
+  }
+  : 
+    BO (statement[table] {
+      statements.addAll($statement.out);
+      
+    })* BF { $out = statements; }
+  |
+    statement[table] {
+      statements.addAll($statement.out);
+      $out = statements;
+    }
+  ;
+
+statement [SymbolTable table] returns [List<ASD.Expression> out]
+  @init {
+    List<ASD.Expression> expressions = new ArrayList<ASD.Expression>();
+  }
+  :
+    RETURN_STMNT expression[table] {
+      expressions.add(new ASD.ReturnStatement($expression.out));
+      $out = expressions;
+    }
+  |
+    localdeclaration[table] {
+      expressions = $localdeclaration.out;
+      $out = expressions;
+    }
+;
+
+localdeclaration [SymbolTable table] returns [List<ASD.Expression> out]
+  @init {
+    List<ASD.Expression> decls = new ArrayList<ASD.Expression>();
+  }    
+  :
+    type ident { 
+        table.add(new SymbolTable.VariableSymbol($type.out, $ident.text));
+        decls.add(new ASD.Instanciation(new ASD.Variable($type.out, $ident.text)));
+        
+      } (SEP ident { 
+        table.add(new SymbolTable.VariableSymbol($type.out, $ident.text));
+        decls.add(new ASD.Instanciation(new ASD.Variable($type.out, $ident.text)));
+        
+      })* {
+        $out = decls;
+      } 
+
+  ;
+
+
+expression [SymbolTable table] returns [ASD.Expression out]
+    :   
+
+      l=multExpr[table] {$out = $l.out; } (op=(ADD | SUB) r=multExpr[table] {
+        switch($op.getType()) {
+        case ADD :
+          $out = new ASD.AddExpression($out, $r.out);
+          break;
+        case SUB :
+          $out = new ASD.SubExpression($out, $r.out);
+          break;
+        }
+      })*
+    ;
+
+multExpr [SymbolTable table] returns [ASD.Expression out]
+    : 
+    l=atome[table] {$out = $l.out; } (op=(MUL | SDIV) r=atome[table] { 
+        switch($op.getType()) {
+        case MUL :
+          $out = new ASD.MulExpression($out, $r.out);
+          break;
+        case SDIV :
+          $out = new ASD.SignedDivExpression($out, $r.out);
+          break;
+        }
+      })*
+    
+    ; 
+
+/*
+expression  returns [ASD.Expression out]
     :
-    PO expression PF {
+    PO expressio PF {
       $out = $expression.out;
     }
-    |
-    <assoc=left>
+    | 
       l=expression op=(MUL | SDIV) r=expression { 
         switch($op.getType()) {
         case MUL :
@@ -42,7 +129,7 @@ expression returns [ASD.Expression out]
           break;
         }
       }
-    | <assoc=left>
+    | 
       l=expression op=(ADD | SUB) r=expression {
         switch($op.getType()) {
         case ADD :
@@ -57,6 +144,7 @@ expression returns [ASD.Expression out]
         $out = $c.out;
       }
     ;
+*/
 
 type returns [ASD.Type out]
   : INT_TYPE {
@@ -68,11 +156,18 @@ type returns [ASD.Type out]
     }
   ;
 
-ident returns [ASD.ID out]
-  : IDENT { $out = new ASD.GlobalID($IDENT.getText()); }
+ident returns [String text]
+  :
+    IDENT { $text = $IDENT.getText(); }
   ;
 
-atome returns [ASD.Expression out]
-    : INTEGER { $out = new ASD.IntegerExpression($INTEGER.int); }
-    // TODO : that's all?
+atome [SymbolTable table] returns [ASD.Expression out]
+    : 
+      PO l=expression[table] PF {
+        $out = $l.out;
+      }
+    |
+      INTEGER { $out = new ASD.IntegerExpression($INTEGER.int); }
+    |
+      TEXT { /*$out = new ASD.StringExpression($TEXT.getText());*/ }
     ;

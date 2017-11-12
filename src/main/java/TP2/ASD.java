@@ -1,82 +1,97 @@
 package TP2;
 
 import java.util.List;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
-
-import TP2.Llvm.Instruction;
 
 public class ASD {
   static public class Program {
-    List<Fonction> listFonction; // What a program contains. TODO : change when you extend the language
-    
+    List<Fonction> listFonction;
+
     public Program(List<Fonction> listFonction) {
       this.listFonction = listFonction;
     }
 
-    // Pretty-printer
     public String pp() {
       StringBuilder ret = new StringBuilder();
-      for(Fonction f : this.listFonction) {
+
+      for (Fonction f : this.listFonction) {
         ret.append(f.pp());
       }
+
       return ret.toString();
     }
 
-    // IR generation
     public Llvm.IR toIR() throws TypeException {
-      // TODO : change when you extend the language
-
       Llvm.IR ir = new Llvm.IR(Llvm.empty(), Llvm.empty());
-      // computes the IR of the expression
-      for(Fonction f : this.listFonction) {
-        ir.appendCode(f.toIR());
+
+      for (Fonction f : this.listFonction) {
+        ir.append(f.toIR().ir);
       }
-      // add a return instruction
 
       return ir;
     }
   }
 
-  // All toIR methods returns the IR, plus extra information (synthesized attributes)
-  // They can take extra arguments (inherited attributes)
+  static public class ReturnStatement extends Expression {
+    Expression e;
 
-  static public class Fonction {
-    
+    public ReturnStatement(Expression e) {
+      this.e = e;
+    }
+
+    public String pp() {
+      return "RETURN " + e.pp();
+    }
+
+    public RetExpression toIR() throws TypeException {
+      RetExpression ret = e.toIR();
+      ret.ir.appendCode(new Llvm.Return(ret.type.toLlvmType(), ret.result));
+
+      return new RetExpression(ret.ir, ret.type, ret.result);
+    }
+  }
+
+  static public class Fonction extends Expression {
+
     Type type;
     ID id;
-    List<Instruction> instructions = Llvm.empty();
-    
-    public Fonction(Type type, ID id, List<Instruction> instructions) {
+    List<Expression> expressions;
+    Llvm.IR ir;
+
+    public Fonction(Type type, ID id, List<Expression> expressions) {
       this.type = type;
-        this.id = id;
-        if(instructions != null) {
-          this.instructions = instructions;
-        }
+      this.id = id;
+      this.expressions = expressions;
     }
-    
+
     public String pp() {
       return "";
     }
-    
-    public Llvm.Fonction toIR() {
-      Llvm.Fonction f = new Llvm.Fonction(type.toLlvmType(), id.toLlvmID(), instructions);
-      return f;
+
+    public RetExpression toIR() throws TypeException {
+      this.ir = new Llvm.IR(Llvm.empty(), Llvm.empty());
+      Llvm.Fonction f = new Llvm.Fonction(type.toLlvmType(), id.toLlvmID());
+      this.ir.appendCode(f);
+      this.ir.appendCode(new Llvm.OpenBlock());
+
+      for (Expression s : this.expressions) {
+        ir.append(s.toIR().ir);
+      }
+      
+      this.ir.appendCode(new Llvm.CloseBlock());
+
+      return new RetExpression(this.ir, this.type, "");
     }
   }
-  
+
   static public abstract class Expression {
     public abstract String pp();
+
     public abstract RetExpression toIR() throws TypeException;
 
-    // Object returned by toIR on expressions, with IR + synthesized attributes
     static public class RetExpression {
-      // The LLVM IR:
       public Llvm.IR ir;
-      // And additional stuff:
-      public Type type; // The type of the expression
-      public String result; // The name containing the expression's result
-      // (either an identifier, or an immediate value)
+      public Type type;
+      public String result;
 
       public RetExpression(Llvm.IR ir, Type type, String result) {
         this.ir = ir;
@@ -85,9 +100,9 @@ public class ASD {
       }
     }
   }
-  
-  // Concrete class for Expression: add case
+
   static public class AddExpression extends Expression {
+
     Expression left;
     Expression right;
 
@@ -96,41 +111,29 @@ public class ASD {
       this.right = right;
     }
 
-    // Pretty-printer
     public String pp() {
       return "(" + left.pp() + " + " + right.pp() + ")";
     }
 
-    // IR generation
     public RetExpression toIR() throws TypeException {
       RetExpression leftRet = left.toIR();
       RetExpression rightRet = right.toIR();
 
-      // We check if the types mismatches
-      if(!leftRet.type.equals(rightRet.type)) {
+      if (!leftRet.type.equals(rightRet.type)) {
         throw new TypeException("type mismatch: have " + leftRet.type + " and " + rightRet.type);
       }
 
-      // We base our build on the left generated IR:
-      // append right code
       leftRet.ir.append(rightRet.ir);
-
-      // allocate a new identifier for the result
       String result = Utils.newtmp();
-
-      // new add instruction result = left + right
       Llvm.Instruction add = new Llvm.Add(leftRet.type.toLlvmType(), leftRet.result, rightRet.result, result);
-
-      // append this instruction
       leftRet.ir.appendCode(add);
 
-      // return the generated IR, plus the type of this expression
-      // and where to find its result
       return new RetExpression(leftRet.ir, leftRet.type, result);
     }
   }
 
   static public class MulExpression extends Expression {
+
     Expression left;
     Expression right;
 
@@ -139,36 +142,23 @@ public class ASD {
       this.right = right;
     }
 
-    // Pretty-printer
     public String pp() {
       return "(" + left.pp() + " * " + right.pp() + ")";
     }
 
-    // IR generation
     public RetExpression toIR() throws TypeException {
       RetExpression leftRet = left.toIR();
       RetExpression rightRet = right.toIR();
 
-      // We check if the types mismatches
-      if(!leftRet.type.equals(rightRet.type)) {
+      if (!leftRet.type.equals(rightRet.type)) {
         throw new TypeException("type mismatch: have " + leftRet.type + " and " + rightRet.type);
       }
 
-      // We base our build on the left generated IR:
-      // append right code
       leftRet.ir.append(rightRet.ir);
-
-      // allocate a new identifier for the result
       String result = Utils.newtmp();
-
-      // new add instruction result = left + right
       Llvm.Instruction add = new Llvm.Mul(leftRet.type.toLlvmType(), leftRet.result, rightRet.result, result);
-
-      // append this instruction
       leftRet.ir.appendCode(add);
 
-      // return the generated IR, plus the type of this expression
-      // and where to find its result
       return new RetExpression(leftRet.ir, leftRet.type, result);
     }
   }
@@ -190,22 +180,20 @@ public class ASD {
       RetExpression leftRet = left.toIR();
       RetExpression rightRet = right.toIR();
 
-      if(!leftRet.type.equals(rightRet.type)) {
+      if (!leftRet.type.equals(rightRet.type)) {
         throw new TypeException("type mismatch: have " + leftRet.type + " and " + rightRet.type);
       }
 
       leftRet.ir.append(rightRet.ir);
-
       String result = Utils.newtmp();
-
-      Llvm.Instruction add = new Llvm.SignedDiv(leftRet.type.toLlvmType(), leftRet.result, rightRet.result, result);
-
+      Llvm.Instruction add = new Llvm.SignedDiv(leftRet.type.toLlvmType(), leftRet.result, rightRet.result,
+          result);
       leftRet.ir.appendCode(add);
 
       return new RetExpression(leftRet.ir, leftRet.type, result);
     }
   }
-  
+
   static public class SubExpression extends Expression {
     Expression left;
     Expression right;
@@ -215,43 +203,31 @@ public class ASD {
       this.right = right;
     }
 
-    // Pretty-printer
     public String pp() {
       return "(" + left.pp() + " - " + right.pp() + ")";
     }
 
-    // IR generation
     public RetExpression toIR() throws TypeException {
       RetExpression leftRet = left.toIR();
       RetExpression rightRet = right.toIR();
 
-      // We check if the types mismatches
-      if(!leftRet.type.equals(rightRet.type)) {
+      if (!leftRet.type.equals(rightRet.type)) {
         throw new TypeException("type mismatch: have " + leftRet.type + " and " + rightRet.type);
       }
 
-      // We base our build on the left generated IR:
-      // append right code
       leftRet.ir.append(rightRet.ir);
-
-      // allocate a new identifier for the result
       String result = Utils.newtmp();
-
-      // new add instruction result = left + right
       Llvm.Instruction add = new Llvm.Sub(leftRet.type.toLlvmType(), leftRet.result, rightRet.result, result);
-
-      // append this instruction
       leftRet.ir.appendCode(add);
 
-      // return the generated IR, plus the type of this expression
-      // and where to find its result
       return new RetExpression(leftRet.ir, leftRet.type, result);
     }
   }
-
-  // Concrete class for Expression: constant (integer) case
+  
   static public class IntegerExpression extends Expression {
+    
     int value;
+
     public IntegerExpression(int value) {
       this.value = value;
     }
@@ -261,55 +237,126 @@ public class ASD {
     }
 
     public RetExpression toIR() {
-      // Here we simply return an empty IR
-      // the `result' of this expression is the integer itself (as string)
       return new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), new IntType(), "" + value);
     }
   }
-  
+
   static public abstract class ID {
     String identifiant = "";
+
     public ID(String identifiant) {
       this.identifiant = identifiant;
     }
+
     public abstract String pp();
+
     public abstract Llvm.ID toLlvmID();
   }
-  
+
   static public class GlobalID extends ID {
 
-  public GlobalID(String identifiant) {
-    super(identifiant);
+    public GlobalID(String identifiant) {
+      super(identifiant);
+    }
+
+    @Override
+    public String pp() {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
+    @Override
+    public Llvm.ID toLlvmID() {
+      return new Llvm.GlobalID(this.identifiant);
+    }
   }
 
-  @Override
-  public String pp() {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public Llvm.ID toLlvmID() {
-    return new Llvm.GlobalID(this.identifiant);
-  }
-  }
-
-  // Warning: this is the type from VSL+, not the LLVM types!
   static public abstract class Type {
     public abstract String pp();
+
     public abstract Llvm.Type toLlvmType();
   }
   
+  static public class Affectation extends Expression {
+    
+    Variable variable;
+    Expression expression;
+    
+    public Affectation(Variable variable, Expression expression) {
+      this.variable = variable;
+      this.expression = expression;
+    }
+    
+    @Override
+    public String pp() {
+      return variable.pp() + expression.pp();
+    }
+
+    @Override
+    public RetExpression toIR() throws TypeException {
+      RetExpression ret = this.expression.toIR();
+      
+      ret.ir.appendCode(new Llvm.Affectation(this.variable.toIR().result, ret.result));
+      
+      return ret;
+    }
+    
+  }
+  
+  static public class Instanciation extends Expression {
+
+    Variable variable;
+    
+    public Instanciation(Variable variable) {
+      this.variable = variable;
+    }
+    
+    @Override
+    public String pp() {
+      return this.variable.pp() + "\n";
+    }
+
+    @Override
+    public RetExpression toIR() throws TypeException {
+      RetExpression ret = this.variable.toIR();
+      ret.ir.appendCode(new Llvm.Allocation(ret.type.toLlvmType(), ret.result));
+      return ret;
+    }
+    
+  }
+  
+  static public class Variable extends Expression {
+
+    Type type;
+    String ident;
+    
+    public Variable(Type type, String ident) {
+      this.type = type;
+      this.ident = ident;
+    }
+    
+    @Override
+    public String pp() {
+      return type.pp() + ident;
+    }
+
+    @Override
+    public RetExpression toIR() throws TypeException {
+      return new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), type, ident);
+    }
+    
+  }
+
   static class VoidType extends Type {
     public String pp() {
       return "VOID";
     }
-    
+
     @Override
     public boolean equals(Object obj) {
       return obj instanceof VoidType;
     }
-    
+
     public Llvm.Type toLlvmType() {
       return new Llvm.VoidType();
     }
@@ -320,8 +367,24 @@ public class ASD {
       return "INT";
     }
 
-    @Override public boolean equals(Object obj) {
+    @Override
+    public boolean equals(Object obj) {
       return obj instanceof IntType;
+    }
+
+    public Llvm.Type toLlvmType() {
+      return new Llvm.IntType();
+    }
+  }
+  
+  static class StringType extends Type {
+    public String pp() {
+      return "STRING";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return obj instanceof StringType;
     }
 
     public Llvm.Type toLlvmType() {

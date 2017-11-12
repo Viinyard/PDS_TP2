@@ -1,1 +1,1 @@
-7 * 3 * 2
+FUNC INT main() RETURN 7 * 3 * 2

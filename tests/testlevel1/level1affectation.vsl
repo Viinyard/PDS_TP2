@@ -1,0 +1,5 @@
+FUNC INT main() {
+	INT x
+	x = 1
+	RETURN x
+}

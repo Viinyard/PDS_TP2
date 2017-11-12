@@ -1,1 +1,1 @@
-2 + 8 + 10 + 20 + 2
+FUNC INT main() RETURN 2 + 8 + 10 + 20 + 2

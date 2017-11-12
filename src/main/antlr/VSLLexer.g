@@ -22,10 +22,17 @@ fragment ASCII  : ~('\n'|'"');
 PO    : '(' ; // Left parenthesis
 PF    : ')' ;
 
+BO : '{';
+BF : '}';
+SEP : ',';
+EQUAL : '=';
+
 FUNC_TYPE : 'FUNC';
 
 VOID_TYPE : 'VOID';
 INT_TYPE : 'INT';
+
+RETURN_STMNT : 'RETURN';
 
 ADD : '+' ;
 SUB : '-' ;
