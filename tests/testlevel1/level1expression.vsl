@@ -1,0 +1,7 @@
+FUNC INT main() {
+	INT x, y, z
+	x := 4
+	y := 8
+	z := x * y + 10
+	RETURN z * 2 - 42
+}

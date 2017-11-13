@@ -8,10 +8,7 @@ declare i32 @printf(i8* noalias nocapture, ...)
 
 
 define i32 @main() {
-	%x =  alloca i32
-	store i32 1, i32* %x
-	%tmp1 = load i32, i32* %x
-	ret i32 %tmp1
+	ret i32 1
 }
 
 

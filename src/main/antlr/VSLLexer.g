@@ -25,14 +25,31 @@ PF    : ')' ;
 BO : '{';
 BF : '}';
 SEP : ',';
-EQUAL : '=';
+EQUAL : ':=';
+
+NE : '!=' | '<>' ;
+EQ : '=' ;
+GT : '>' ;
+LT : '<' ;
+GE : '>=' ;
+LE : '<=' ;
 
 FUNC_TYPE : 'FUNC';
+PROTO_TYPE : 'PROTO';
 
 VOID_TYPE : 'VOID';
 INT_TYPE : 'INT';
 
 RETURN_STMNT : 'RETURN';
+
+IF : 'IF';
+THEN : 'THEN';
+ELSE : 'ELSE';
+FI : 'FI';
+
+WHILE : 'WHILE';
+DO : 'DO';
+DONE : 'DONE';
 
 ADD : '+' ;
 SUB : '-' ;

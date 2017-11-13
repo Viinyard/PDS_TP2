@@ -1,0 +1,10 @@
+FUNC INT main() {
+	INT x
+	x := 2
+	x := x * x
+	x := x * x
+	x := x * 2
+
+	
+	RETURN 256
+}

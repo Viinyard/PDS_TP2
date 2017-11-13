@@ -1,5 +1,0 @@
-FUNC INT main() {
-	INT i
-	i = 42
-	RETURN i
-}

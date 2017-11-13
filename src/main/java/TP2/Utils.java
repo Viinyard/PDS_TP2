@@ -13,7 +13,7 @@ public class Utils {
   static public String indent(int level) {
     StringBuilder r = new StringBuilder();
     while(level-- > 0)
-      r.append("  ");
+      r.append("\t");
     return r.toString();
   }
 
