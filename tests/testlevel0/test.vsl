@@ -1,2 +1,2 @@
-FUNC INT main() RETURN 3 + 1 - 12
+FUNC INT main() RETURN 3 + 1 - 12 + 50
 

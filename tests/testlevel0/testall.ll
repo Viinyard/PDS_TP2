@@ -16,7 +16,6 @@ define i32 @main() {
 	%tmp6 = udiv i32 20, 4
 	%tmp7 = mul i32 %tmp6, 2
 	%tmp8 = sub i32 %tmp5, %tmp7
-	store i32 12, i32* %tmp8
 	ret i32 %tmp8
 }
 

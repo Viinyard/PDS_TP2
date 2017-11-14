@@ -27,6 +27,9 @@ BF : '}';
 SEP : ',';
 EQUAL : ':=';
 
+PRINT : 'PRINT';
+READ : 'READ';
+
 NE : '!=' | '<>' ;
 EQ : '=' ;
 GT : '>' ;

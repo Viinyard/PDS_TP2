@@ -2,6 +2,7 @@ package TP2;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 // This file contains a simple LLVM IR representation
 // and methods to generate its string representation
@@ -134,7 +135,7 @@ public class Llvm {
 
 	static public class StringType extends Type {
 		public String toString() {
-			return "i8*";
+			return "i8";
 		}
 	}
 	
@@ -430,23 +431,58 @@ public class Llvm {
 		
 		@Override
 		public String toString() {
-			return this.type + " " + "%" + this.ident; 
+			return this.type + " " + this.ident; 
 		}	
+	}
+	
+	static public class VArgsCast extends Type {
+
+		@Override
+		public String toString() {
+			return "(i8*, ...) ";
+		}
+		
+	}
+	
+	static public class StringConstant extends Instruction {
+
+		Type type;
+		int length;
+		String ident, value;
+		
+		public StringConstant(Type type, int length, String ident, String value) {
+			this.type = type;
+			this.length = length;
+			this.ident = ident;
+			this.value = value;
+		}
+		
+		@Override
+		public String toString() {
+			return "@" + "\"" +ident + "\"" + " = " + "global [" + this.length + " x " + this.type + "]" + " c\"" + this.value + "\"\n";
+		}
 	}
 	
 	static public class CallFonction extends Instruction {
 		
 		Type type;
+		Optional<String> cast;
 		String ident;
 		
 		public CallFonction(Type type, String ident) {
+			super();
 			this.type = type;
 			this.ident = ident;
+		}
+		
+		public CallFonction(Type type, Type cast, String ident) {
+			this(type, ident);
+			this.cast = Optional.ofNullable(cast.toString());
 		}
 
 		@Override
 		public String toString() {			
-			return "call" + " " + this.type + " " + "@" + this.ident;
+			return Utils.indent(this.level) + "call" + " " + this.type + " " + cast.orElse("") + "@" + this.ident;
 		}
 	}
 	
@@ -454,7 +490,7 @@ public class Llvm {
 		
 		@Override
 		public String toString() {
-			return ")";
+			return ")\n";
 		}
 	}
 	

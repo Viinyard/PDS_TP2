@@ -1,5 +1,5 @@
 ; Target
-target triple = "x86_64-unknown-linux-gnu"
+target triple = "x86_64-apple-macosx10.12.0"
 ; External declaration of the printf function
 declare i32 @printf(i8* noalias nocapture, ...)
 
@@ -8,10 +8,11 @@ declare i32 @printf(i8* noalias nocapture, ...)
 
 
 define i32 @main() {
-%tmp1 = add i32 20, 2
-%tmp2 = add i32 10, %tmp1
-%tmp3 = add i32 8, %tmp2
-%tmp4 = add i32 2, %tmp3
-ret i32 %tmp4
+	%tmp1 = add i32 2, 8
+	%tmp2 = add i32 %tmp1, 10
+	%tmp3 = add i32 %tmp2, 20
+	%tmp4 = add i32 %tmp3, 2
+	ret i32 %tmp4
 }
+
 

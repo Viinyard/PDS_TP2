@@ -86,7 +86,7 @@ public class SymbolTable {
     this.table.put(sym.ident, sym);
     return true;
   }
-
+  
   // Remove a symbol
   // Returns false if the symbol is not in the table (without looking at parent's)
   public boolean remove(String ident) {

@@ -2,6 +2,9 @@ package TP2;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
+import TP2.Utils.LLVMStringConstant;
 
 public class ASD {
 	static public class Program {
@@ -285,11 +288,52 @@ public class ASD {
 				ret.ir.append(s.toIR().ir);
 			}
 
-			ret.ir.appendCode(new Llvm.Return(this.type.toLlvmType(), "0"));
+			if(this.type.equals(new VoidType())) {
+				ret.ir.appendCode(new Llvm.Return(this.type.toLlvmType(), ""));
+			}
 			ret.ir.appendCode(new Llvm.CloseBlock());
 
 			return ret;
 		}
+	}
+	
+	static public class PrintFunction extends Expression {
+
+		List<Expression> args;
+		
+		public PrintFunction(List<Expression> args) {
+			this.args = args;
+		}
+		
+		@Override
+		public String pp() {
+			StringBuilder ret = new StringBuilder("PRINT ");
+			for(Expression e : this.args) {
+				ret.append(e.pp());
+			}
+			ret.append("\n");
+			return ret.toString();
+		}
+
+		@Override
+		public RetExpression toIR() throws TypeException {
+			return new CallFonction(new IntType(), new VArgsFonction(), "printf", this.args).toIR();
+		}
+		
+	}
+	
+	static public class VArgsFonction extends Type {
+
+		@Override
+		public String pp() {
+			return "";
+		}
+
+		@Override
+		public TP2.Llvm.Type toLlvmType() {
+			return new Llvm.VArgsCast();
+		}
+		
 	}
 	
 	static public class CallFonction extends Expression {
@@ -297,11 +341,17 @@ public class ASD {
 		Type type;
 		String ident;
 		List<Expression> args;
+		Optional<Type> cast;
 		
-		public CallFonction(Type type, String ident, List<Expression> args) {
+		public CallFonction(Type type,  String ident, List<Expression> args) {
 			this.type = type;
 			this.ident = ident;
 			this.args = args;
+		}
+		
+		public CallFonction(Type type, Type cast, String ident, List<Expression> args) {
+			this(type, ident, args);
+			this.cast = Optional.ofNullable(cast);
 		}
 		
 		@Override
@@ -316,7 +366,8 @@ public class ASD {
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.type, this.ident);
+//			String result = Utils.newtmp();
+			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.type, "");
 			
 			List<RetExpression> retargs = new ArrayList<RetExpression>();
 			this.args.forEach(p -> {
@@ -328,7 +379,7 @@ public class ASD {
 			});
 			retargs.forEach(p -> ret.ir.append(p.ir));
 			
-			ret.ir.appendCode(new Llvm.CallFonction(this.type.toLlvmType(), this.ident));
+			ret.ir.appendCode(new Llvm.CallFonction(this.type.toLlvmType(), this.cast.isPresent() ? this.cast.get().toLlvmType() : null, this.ident));
 			ret.ir.appendCode(new Llvm.BeginArgs());
 			retargs.forEach(p -> ret.ir.appendCode(new Llvm.Variable(p.type.toLlvmType(), p.result)));
 			ret.ir.appendCode(new Llvm.EndArgs());
@@ -374,6 +425,32 @@ public class ASD {
 				this.type = type;
 				this.result = result;
 			}
+		}
+	}
+	
+	static public class StringExpression extends Expression {
+		String text;
+		
+		public StringExpression(String text) {
+			this.text = text;
+			System.out.println("; text > "+text);
+		}
+
+		@Override
+		public String pp() {
+			return "\"" + this.text + "\"";
+		}
+
+		@Override
+		public RetExpression toIR() throws TypeException {
+			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), new StringType(), this.text );
+			
+			LLVMStringConstant strc = Utils.stringTransform(this.text);
+			String ident = Utils.newglob(this.text);
+			
+			ret.ir.appendHeader(new Llvm.StringConstant(ret.type.toLlvmType(), strc.length, ident, strc.str));
+			
+			return ret;
 		}
 	}
 
@@ -764,7 +841,7 @@ public class ASD {
 		}
 
 		public Llvm.Type toLlvmType() {
-			return new Llvm.IntType();
+			return new Llvm.StringType();
 		}
 	}
 }

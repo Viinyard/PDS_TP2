@@ -50,9 +50,6 @@ block [SymbolTable table] returns [List<ASD.Expression> out]
       statements.addAll($statement.out);
       $out = statements;
     }
-  @after {
-    // delette newTable ? 
-  }
   ;
 
 statement [SymbolTable table] returns [List<ASD.Expression> out]
@@ -65,6 +62,10 @@ statement [SymbolTable table] returns [List<ASD.Expression> out]
   :
     RETURN_STMNT expression[table] {
       expressions.add(new ASD.ReturnStatement($expression.out));
+    }
+  |
+    PRINT args[table] {
+      expressions.add(new ASD.PrintFunction($args.out));
     }
   |
     localdeclaration[table] {
@@ -190,21 +191,36 @@ ident returns [String text]
     IDENT { $text = $IDENT.getText(); }
   ;
 
+args [SymbolTable table] returns [SymbolTable arguments, List<ASD.Expression> out]
+  
+  :
+   expression[table] {
+      $out = new ArrayList<ASD.Expression>();
+      $out.add($expression.out);
+    } (SEP p=expression[table] {
+      $out.add($p.out);
+    })*
+  ;
+
+
 atome [SymbolTable table] returns [ASD.Expression out]
     : 
       PO l=expression[table] PF {
         $out = $l.out;
       }
     |
-      ident PO PF {
+      ident PO args[table] PF {
         SymbolTable.FunctionSymbol s = (SymbolTable.FunctionSymbol) table.lookup($ident.text);
         if(s == null) { throw new IllegalArgumentException("Cannot find symbol " + $ident.text); }
-        $out = new ASD.CallFonction()
+        SymbolTable.FunctionSymbol f = new SymbolTable.FunctionSymbol(s.returnType, $ident.text, $args.arguments, s.defined);
+        if(!s.equals(f)) { throw new IllegalArgumentException("Cannot find function with these args for function : " + $ident.text);}
+        
+        $out = new ASD.CallFonction(s.returnType, $ident.text, $args.out);
       }
     |
       INTEGER { $out = new ASD.IntegerExpression($INTEGER.int); }
     |
-      TEXT { /*$out = new ASD.StringExpression($TEXT.getText());*/ }
+      TEXT { $out = new ASD.StringExpression($TEXT.getText()); }
     |
       ident {
         SymbolTable.Symbol s = table.lookup($ident.text);
