@@ -50,48 +50,51 @@ block [SymbolTable table] returns [List<ASD.Expression> out]
       statements.addAll($statement.out);
       $out = statements;
     }
+  @after {
+    // delette newTable ? 
+  }
   ;
 
 statement [SymbolTable table] returns [List<ASD.Expression> out]
   @init {
     List<ASD.Expression> expressions = new ArrayList<ASD.Expression>();
   }
+  @after {
+    $out = expressions;
+  }
   :
     RETURN_STMNT expression[table] {
       expressions.add(new ASD.ReturnStatement($expression.out));
-      $out = expressions;
     }
   |
     localdeclaration[table] {
       expressions = $localdeclaration.out;
-      $out = expressions;
     }
   |
     affectation[table] {
       expressions.add($affectation.out);
-      $out = expressions;
     }
   |
-    IF condition THEN block FI {
+    IF condition[table] THEN block[table] FI {
       expressions.add(new ASD.If($condition.out, $block.out));
-      $out = expressions;
     }
   |
-    IF condition THEN t=block ELSE f=block FI {
-      expressions.add(new ASD.If($condition.out, $t.out, $f.out));
-      $out = expressions;
+    IF condition[table] THEN t=block[table] ELSE f=block[table] FI {
+      expressions.add(new ASD.IfElse($condition.out, $t.out, $f.out));
+      //$out = expressions;
     }
   |
-    WHILE condition DO block DONE {
-      
+    WHILE condition[table] DO block[table] DONE {
+      expressions.add(new ASD.While($condition.out, $block.out));
+      //$out = expressions;
     }
 ;
 
 condition [SymbolTable table] returns [ASD.Expression out]
   :
-    l=expression { 
-        $out = new ASD.Booleen($expression.out, $expression.out); 
-      } (operand r=expression { 
+    l=expression[table] { 
+        $out = new ASD.Booleen($expression.out); 
+      } (operand r=expression[table] { 
         $out = new ASD.Condition($l.out, $operand.out, $r.out); 
       })?
   ;
@@ -193,13 +196,19 @@ atome [SymbolTable table] returns [ASD.Expression out]
         $out = $l.out;
       }
     |
+      ident PO PF {
+        SymbolTable.FunctionSymbol s = (SymbolTable.FunctionSymbol) table.lookup($ident.text);
+        if(s == null) { throw new IllegalArgumentException("Cannot find symbol " + $ident.text); }
+        $out = new ASD.CallFonction()
+      }
+    |
       INTEGER { $out = new ASD.IntegerExpression($INTEGER.int); }
     |
       TEXT { /*$out = new ASD.StringExpression($TEXT.getText());*/ }
     |
       ident {
         SymbolTable.Symbol s = table.lookup($ident.text);
-        if(s == null) { throw new IllegalArgumentException("Cannot fin symbol "+$ident.text);}
+        if(s == null) { throw new IllegalArgumentException("Cannot find symbol " + $ident.text); }
         if(s instanceof SymbolTable.VariableSymbol) {
           $out = new ASD.Variable(((SymbolTable.VariableSymbol) s).type, s.ident);
         }

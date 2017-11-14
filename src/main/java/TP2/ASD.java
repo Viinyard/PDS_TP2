@@ -1,5 +1,6 @@
 package TP2;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ASD {
@@ -117,7 +118,7 @@ public class ASD {
 			
 			ret.ir.appendCode(new Llvm.Label(labelTrue));
 			
-			ret.ir.appendCode(new Llvm.OpenBlock());
+//			ret.ir.appendCode(new Llvm.OpenLabelBlock());
 			
 			for(Expression e : this.blockTrue) {
 				ret.ir.append(e.toIR().ir);
@@ -125,11 +126,11 @@ public class ASD {
 			
 			ret.ir.appendCode(new Llvm.Jump(labelFi));
 			
-			ret.ir.appendCode(new Llvm.CloseBlock());
+//			ret.ir.appendCode(new Llvm.CloseLabelBlock());
 			
 			ret.ir.appendCode(new Llvm.Label(labelElse));
 			
-			ret.ir.appendCode(new Llvm.OpenBlock());
+//			ret.ir.appendCode(new Llvm.OpenLabelBlock());
 			
 			for(Expression e : this.blockFalse) {
 				ret.ir.append(e.toIR().ir);
@@ -137,7 +138,7 @@ public class ASD {
 			
 			ret.ir.appendCode(new Llvm.Jump(labelFi));
 			
-			ret.ir.appendCode(new Llvm.CloseBlock());
+//			ret.ir.appendCode(new Llvm.CloseLabelBlock());
 			
 			ret.ir.appendCode(new Llvm.Label(labelFi));
 			
@@ -146,7 +147,55 @@ public class ASD {
 		
 	}
 	
-	// TODO while
+	static public class While extends Expression {
+
+		public Expression condition;
+		public List<Expression> block;
+		
+		public While(Expression condition, List<Expression> block) {
+			this.condition = condition;
+			this.block = block;
+		}
+		
+		@Override
+		public String pp() {
+			StringBuilder ret = new StringBuilder("WHILE " + this.condition.pp() + " DO \n");
+			for(Expression e : this.block) {
+				ret.append(e.pp());
+			}
+			ret.append("DONE\n");
+			return ret.toString();
+		}
+
+		@Override
+		public RetExpression toIR() throws TypeException {
+			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), new VoidType(), ""), cond = this.condition.toIR();
+			String labelEntry = Utils.newlab("entry"), labelTrue = Utils.newlab("do"), labelFalse = Utils.newlab("done");
+			
+			ret.ir.appendCode(new Llvm.Label(labelEntry));
+			
+			ret.ir.append(cond.ir);
+			
+			ret.ir.appendCode(new Llvm.JumpIf(cond.type.toLlvmType(), cond.result, labelTrue, labelFalse));
+			
+			ret.ir.appendCode(new Llvm.Label(labelTrue));
+			
+//			ret.ir.appendCode(new Llvm.OpenLabelBlock());
+			
+			for(Expression e : this.block) {
+				ret.ir.append(e.toIR().ir);
+			}
+			
+			ret.ir.appendCode(new Llvm.Jump(labelEntry));
+			
+//			ret.ir.appendCode(new Llvm.CloseLabelBlock());
+			
+			ret.ir.appendCode(new Llvm.Label(labelFalse));
+			
+			return ret;
+		}
+		
+	}
 	
 	static public class If extends Expression {
 
@@ -177,13 +226,13 @@ public class ASD {
 			
 			ret.ir.appendCode(new Llvm.Label(labelTrue));
 			
-			ret.ir.appendCode(new Llvm.OpenBlock());
+//			ret.ir.appendCode(new Llvm.OpenLabelBlock());
 			
 			for(Expression e : this.block) {
 				ret.ir.append(e.toIR().ir);
 			}
 			
-			ret.ir.appendCode(new Llvm.CloseBlock());
+//			ret.ir.appendCode(new Llvm.CloseLabelBlock());
 			
 			ret.ir.appendCode(new Llvm.Label(labelFalse));
 			
@@ -236,8 +285,54 @@ public class ASD {
 				ret.ir.append(s.toIR().ir);
 			}
 
+			ret.ir.appendCode(new Llvm.Return(this.type.toLlvmType(), "0"));
 			ret.ir.appendCode(new Llvm.CloseBlock());
 
+			return ret;
+		}
+	}
+	
+	static public class CallFonction extends Expression {
+
+		Type type;
+		String ident;
+		List<Expression> args;
+		
+		public CallFonction(Type type, String ident, List<Expression> args) {
+			this.type = type;
+			this.ident = ident;
+			this.args = args;
+		}
+		
+		@Override
+		public String pp() {
+			StringBuilder ret = new StringBuilder(this.ident + "(");
+			for(Expression e : this.args) {
+				ret.append(e.pp());
+			}
+			ret.append(")");
+			return ret.toString();
+		}
+
+		@Override
+		public RetExpression toIR() throws TypeException {
+			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.type, this.ident);
+			
+			List<RetExpression> retargs = new ArrayList<RetExpression>();
+			this.args.forEach(p -> {
+				try {
+					retargs.add(p.toIR());
+				} catch (TypeException e) {
+					e.printStackTrace();
+				}
+			});
+			retargs.forEach(p -> ret.ir.append(p.ir));
+			
+			ret.ir.appendCode(new Llvm.CallFonction(this.type.toLlvmType(), this.ident));
+			ret.ir.appendCode(new Llvm.BeginArgs());
+			retargs.forEach(p -> ret.ir.appendCode(new Llvm.Variable(p.type.toLlvmType(), p.result)));
+			ret.ir.appendCode(new Llvm.EndArgs());
+			
 			return ret;
 		}
 	}

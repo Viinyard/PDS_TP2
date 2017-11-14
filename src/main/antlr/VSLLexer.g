@@ -31,8 +31,8 @@ NE : '!=' | '<>' ;
 EQ : '=' ;
 GT : '>' ;
 LT : '<' ;
-GE : '>=' ;
-LE : '<=' ;
+GTE : '>=' ;
+LTE : '<=' ;
 
 FUNC_TYPE : 'FUNC';
 PROTO_TYPE : 'PROTO';

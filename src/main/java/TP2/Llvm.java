@@ -232,6 +232,34 @@ public class Llvm {
 		}
 
 	}
+	
+	static public class OpenLabelBlock extends Instruction {
+
+		public OpenLabelBlock() {
+			super();
+			Llvm.lvl++;
+		}
+
+		@Override
+		public String toString() {
+			return "";
+		}
+
+	}
+	
+	static public class CloseLabelBlock extends Instruction {
+
+		public CloseLabelBlock() {
+			super();
+			Llvm.lvl--;
+		}
+
+		@Override
+		public String toString() {
+			return "";
+		}
+
+	}
 
 	static public class CloseBlock extends Instruction {
 
@@ -361,7 +389,7 @@ public class Llvm {
 		
 		@Override
 		public String toString() {
-			return Utils.indent(this.level) + this.result + " = icmp ne " + this.type + " %" + this.ident + ", " + 0 + "\n";
+			return Utils.indent(this.level) + this.result + " = icmp ne " + this.type + " " + this.ident + ", " + 0 + "\n";
 		}
 		
 	}
@@ -389,6 +417,55 @@ public class Llvm {
 		}
 	}
 	
+	static public class Variable extends Instruction {
+
+		Type type;
+		String ident;
+		
+		public Variable(Type type, String ident) {
+			super();
+			this.type = type;
+			this.ident = ident;
+		}
+		
+		@Override
+		public String toString() {
+			return this.type + " " + "%" + this.ident; 
+		}	
+	}
+	
+	static public class CallFonction extends Instruction {
+		
+		Type type;
+		String ident;
+		
+		public CallFonction(Type type, String ident) {
+			this.type = type;
+			this.ident = ident;
+		}
+
+		@Override
+		public String toString() {			
+			return "call" + " " + this.type + " " + "@" + this.ident;
+		}
+	}
+	
+	static public class EndArgs extends Instruction {
+		
+		@Override
+		public String toString() {
+			return ")";
+		}
+	}
+	
+	static public class BeginArgs extends Instruction {
+		
+		@Override
+		public String toString() {
+			return "(";
+		}
+	}
+	
 	static public class Jump extends Instruction {
 		
 		String ident;
@@ -400,7 +477,7 @@ public class Llvm {
 
 		@Override
 		public String toString() {
-			return Utils.indent(this.level) + "br label " + this.ident;
+			return Utils.indent(this.level) + "br label " + "%" + this.ident + "\n";
 		}
 		
 	}
@@ -416,7 +493,7 @@ public class Llvm {
 		
 		@Override
 		public String toString() {
-			return Utils.indent(this.level) + this.ident + ":" + "\n";
+			return Utils.indent(this.level-1) + this.ident + ":" + "\n";
 		}
 		
 	}
@@ -436,7 +513,7 @@ public class Llvm {
 		
 		@Override
 		public String toString() {
-			return Utils.indent(this.level) + "br " + this.type + " " + this.value + " label " + this.labelTrue + ", " + this.labelFalse + "\n";
+			return Utils.indent(this.level) + "br " + this.type + " " + this.value + ", label " + "%" + this.labelTrue + ", label " + "%" + this.labelFalse + "\n";
 		}
 		
 	}

@@ -33,7 +33,7 @@ public class SymbolTable {
         o.ident.equals(this.ident);
     }
   }
-
+  
   public static class FunctionSymbol extends Symbol {
     ASD.Type returnType;
     SymbolTable arguments; // Its argument can be viewed as a symbol table
