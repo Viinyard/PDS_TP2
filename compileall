@@ -9,9 +9,7 @@ do
 	name="`dirname $1`/`basename $file .vsl`"
 	java -jar build/libs/TP2.jar < $name.vsl > $name.ll
 	clang $name.ll -o $name.x
-	exec $name.x > $name.out
-	
-
-	
+	(./$name.x > $name.out) &
+	cat $name.out
 done
 

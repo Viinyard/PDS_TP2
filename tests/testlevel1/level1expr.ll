@@ -55,21 +55,21 @@ declare i32 @printf(i8* noalias nocapture, ...)
 
 define void @main() {
 	%tmp1 = add i32 5, 7
-	call i32 (i8*, ...) @printf(i32 %5i8 %+i32 %7i8 % = i32 %%tmp1i8 %\n)
+	call i32 (i8*, ...) @printf(i32 5i8 +i32 7i8  = i32 %tmp1i8 \n)
 	%tmp2 = sub i32 5, 7
-	call i32 (i8*, ...) @printf(i32 %5i8 %-i32 %7i8 % = i32 %%tmp2i8 %\n)
+	call i32 (i8*, ...) @printf(i32 5i8 -i32 7i8  = i32 %tmp2i8 \n)
 	%tmp3 = mul i32 5, 7
-	call i32 (i8*, ...) @printf(i32 %5i8 %*i32 %7i8 % = i32 %%tmp3i8 %\n)
+	call i32 (i8*, ...) @printf(i32 5i8 *i32 7i8  = i32 %tmp3i8 \n)
 	%tmp4 = udiv i32 5, 7
-	call i32 (i8*, ...) @printf(i32 %5i8 %/i32 %7i8 % = i32 %%tmp4i8 %\n)
+	call i32 (i8*, ...) @printf(i32 5i8 /i32 7i8  = i32 %tmp4i8 \n)
 	%tmp5 = add i32 5, 1
-	call i32 (i8*, ...) @printf(i32 %5i8 %+i32 %1i8 % = i32 %%tmp5i8 %\n)
+	call i32 (i8*, ...) @printf(i32 5i8 +i32 1i8  = i32 %tmp5i8 \n)
 	%tmp6 = add i32 5, 7
 	%tmp7 = mul i32 5, %tmp6
-	call i32 (i8*, ...) @printf(i32 %5i8 %* (i32 %5i8 %+i32 %7i8 %) = i32 %%tmp7i8 %\n)
+	call i32 (i8*, ...) @printf(i32 5i8 * (i32 5i8 +i32 7i8 ) = i32 %tmp7i8 \n)
 	%tmp8 = mul i32 5, 5
 	%tmp9 = add i32 %tmp8, 7
-	call i32 (i8*, ...) @printf(i32 %5i8 %*  i32 %5i8 %+i32 %7i8 %  = i32 %%tmp9i8 %\n)
+	call i32 (i8*, ...) @printf(i32 5i8 *  i32 5i8 +i32 7i8   = i32 %tmp9i8 \n)
 	ret void 
 }
 

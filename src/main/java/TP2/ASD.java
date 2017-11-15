@@ -379,6 +379,9 @@ public class ASD {
 			});
 			retargs.forEach(p -> ret.ir.append(p.ir));
 			
+			List<Llvm.Variable> llvmArgs = new ArrayList<Llvm.Variable>();
+			
+			
 			ret.ir.appendCode(new Llvm.CallFonction(this.type.toLlvmType(), this.cast.isPresent() ? this.cast.get().toLlvmType() : null, this.ident));
 			ret.ir.appendCode(new Llvm.BeginArgs());
 			retargs.forEach(p -> ret.ir.appendCode(new Llvm.Variable(p.type.toLlvmType(), p.result)));
