@@ -146,7 +146,7 @@ localdeclaration [SymbolTable table] returns [List<ASD.Expression> out]
   ;
 
 
-expression [SymbolTable table] returns [ASD.Expression out]
+expression [SymbolTable table] returns [ASD.Expression out, ASD.Type type]
     :   
 
       l=multExpr[table] {$out = $l.out; } (op=(ADD | SUB) r=multExpr[table] {
@@ -161,7 +161,7 @@ expression [SymbolTable table] returns [ASD.Expression out]
       })*
     ;
 
-multExpr [SymbolTable table] returns [ASD.Expression out]
+multExpr [SymbolTable table] returns [ASD.Expression out, ASD.Type type]
     : 
     l=atome[table] {$out = $l.out; } (op=(MUL | SDIV) r=atome[table] { 
         switch($op.getType()) {
@@ -203,10 +203,11 @@ args [SymbolTable table] returns [SymbolTable arguments, List<ASD.Expression> ou
   ;
 
 
-atome [SymbolTable table] returns [ASD.Expression out]
+atome [SymbolTable table] returns [ASD.Expression out, ASD.Type type]
     : 
-      PO l=expression[table] PF {
-        $out = $l.out;
+      PO expression[table] PF {
+        $out = $expression.out;
+        $type = $expression.type;
       }
     |
       ident PO args[table] PF {
@@ -218,16 +219,22 @@ atome [SymbolTable table] returns [ASD.Expression out]
         $out = new ASD.CallFonction(s.returnType, $ident.text, $args.out);
       }
     |
-      INTEGER { $out = new ASD.IntegerExpression($INTEGER.int); }
+      INTEGER { 
+        $type = new ASD.IntType();
+        $out = new ASD.IntegerExpression($INTEGER.int); 
+      }
     |
-      TEXT { $out = new ASD.StringExpression($TEXT.getText()); }
+      TEXT {
+        $type = new ASD.StringType();
+        $out = new ASD.StringExpression($TEXT.getText()); 
+      }
     |
       ident {
-        SymbolTable.Symbol s = table.lookup($ident.text);
+        SymbolTable.VariableSymbol s = (SymbolTable.VariableSymbol) table.lookup($ident.text);
         if(s == null) { throw new IllegalArgumentException("Cannot find symbol " + $ident.text); }
-        if(s instanceof SymbolTable.VariableSymbol) {
-          $out = new ASD.Variable(((SymbolTable.VariableSymbol) s).type, s.ident);
-        }
+        
+        $out = new ASD.Variable(((SymbolTable.VariableSymbol) s).type, s.ident);
+        $type = s.type;
       }
     ;
 

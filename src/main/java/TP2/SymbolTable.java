@@ -14,14 +14,18 @@ public class SymbolTable {
   // Define different symbols
   public static abstract class Symbol {
     String ident; // minimum, used in the storage map
+    ASD.Type type;
+    
+    public Symbol(ASD.Type type, String ident) {
+    		this.type = type;
+    		this.ident = ident;
+    }
   }
 
   public static class VariableSymbol extends Symbol {
-    ASD.Type type;
 
     VariableSymbol(ASD.Type type, String ident) {
-      this.type = type;
-      this.ident = ident;
+    		super(type, ident);
     }
 
     @Override public boolean equals(Object obj) {
@@ -29,19 +33,17 @@ public class SymbolTable {
       if(obj == this) return true;
       if(!(obj instanceof VariableSymbol)) return false;
       VariableSymbol o = (VariableSymbol) obj;
-      return o.type.equals(this.type) &&
-        o.ident.equals(this.ident);
+      return o.type.equals(super.type) &&
+        o.ident.equals(super.ident);
     }
   }
   
   public static class FunctionSymbol extends Symbol {
-    ASD.Type returnType;
     SymbolTable arguments; // Its argument can be viewed as a symbol table
     boolean defined; // false if declared but not defined
 
-    FunctionSymbol(ASD.Type returnType, String ident, SymbolTable arguments, boolean defined) {
-      this.returnType = returnType;
-      this.ident = ident;
+    FunctionSymbol(ASD.Type type, String ident, SymbolTable arguments, boolean defined) {
+      super(type, ident);
       this.arguments = arguments;
       this.defined = defined;
     }
@@ -51,8 +53,8 @@ public class SymbolTable {
       if(obj == this) return true;
       if(!(obj instanceof FunctionSymbol)) return false;
       FunctionSymbol o = (FunctionSymbol) obj;
-      return o.returnType.equals(this.returnType) &&
-        o.ident.equals(this.ident) &&
+      return o.type.equals(super.type) &&
+        o.ident.equals(super.ident) &&
         o.arguments.equals(this.arguments) &&
         o.defined == this.defined;
     }
