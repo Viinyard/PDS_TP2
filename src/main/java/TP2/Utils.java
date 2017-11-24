@@ -17,10 +17,12 @@ public class Utils {
     return r.toString();
   }
 
+  public static void resettmp() {
+	  Utils.tmp = 0;
+  }
   // generate a new unique local identifier (starting with %)
   public static String newtmp() {
-    tmp++;
-    return "%tmp" + tmp;
+    return "" + Utils.tmp++;
   }
 
   // generate a new unique label starting with str

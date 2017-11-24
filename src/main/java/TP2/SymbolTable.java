@@ -1,117 +1,149 @@
 package TP2;
 
-import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
-
-// This file contains the symbol table definition.
-// A symbol table contains a set of ident and the
-// corresponding symbols.
-// It can have a parent, containing itself other
-// symbols. If a symbol is not found, the request
-// is forwarded to the parent.
+import java.util.List;
+import java.util.Map;
 
 public class SymbolTable {
-  // Define different symbols
-  public static abstract class Symbol {
-    String ident; // minimum, used in the storage map
-    ASD.Type type;
-    
-    public Symbol(ASD.Type type, String ident) {
-    		this.type = type;
-    		this.ident = ident;
-    }
-  }
 
-  public static class VariableSymbol extends Symbol {
+	public static abstract class Symbol {
+		ASD.Variable variable;
 
-    VariableSymbol(ASD.Type type, String ident) {
-    		super(type, ident);
-    }
+		public Symbol(ASD.Variable variable) {
+			this.variable = variable;
+		}
+	}
 
-    @Override public boolean equals(Object obj) {
-      if(obj == null) return false;
-      if(obj == this) return true;
-      if(!(obj instanceof VariableSymbol)) return false;
-      VariableSymbol o = (VariableSymbol) obj;
-      return o.type.equals(super.type) &&
-        o.ident.equals(super.ident);
-    }
-  }
-  
-  public static class FunctionSymbol extends Symbol {
-    SymbolTable arguments; // Its argument can be viewed as a symbol table
-    boolean defined; // false if declared but not defined
+	public static class VariableSymbol extends Symbol {
 
-    FunctionSymbol(ASD.Type type, String ident, SymbolTable arguments, boolean defined) {
-      super(type, ident);
-      this.arguments = arguments;
-      this.defined = defined;
-    }
+		VariableSymbol(ASD.Variable variable) {
+			super(variable);
+		}
 
-    @Override public boolean equals(Object obj) {
-      if(obj == null) return false;
-      if(obj == this) return true;
-      if(!(obj instanceof FunctionSymbol)) return false;
-      FunctionSymbol o = (FunctionSymbol) obj;
-      return o.type.equals(super.type) &&
-        o.ident.equals(super.ident) &&
-        o.arguments.equals(this.arguments) &&
-        o.defined == this.defined;
-    }
-  }
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null)
+				return false;
+			if (obj == this)
+				return true;
+			if (!(obj instanceof VariableSymbol))
+				return false;
+			VariableSymbol o = (VariableSymbol) obj;
+			return this.variable.equals(o.variable);
+		}
+		
+		public String toString() {
+			return this.variable.toString();
+		}
+	}
 
-  // Store the table as a map
-  private Map<String, Symbol> table;
-  // Parent table
-  private SymbolTable parent;
+	public static class FunctionSymbol extends Symbol {
+		
+		SymbolTable arguments;
+		boolean defined;
+		
+		FunctionSymbol(ASD.Variable variable, SymbolTable arguments, boolean defined) {
+			super(variable);
+			this.arguments = arguments;
+			this.defined = defined;
+		}
 
-  // Construct a new symbol table
-  public SymbolTable() {
-    this.table = new HashMap<String, Symbol>();
-    this.parent = null;
-  }
+		@Override
+		public boolean equals(Object obj) {
+			if(obj == null) return false;
+		      if(obj == this) return true;
+		      if(!(obj instanceof FunctionSymbol)) return false;
+		      FunctionSymbol o = (FunctionSymbol) obj;
+		      return o.variable.equals(super.variable) &&
+		        o.arguments.equals(this.arguments);
+		}
+		
+		public String toString() {
+			StringBuilder ret = new StringBuilder(this.variable + "\n");
+			for(String s : this.arguments.table.keySet()) {
+				ret.append(".." + s + " > " + this.arguments.table.get(s) + "\n");
+			}
+			
+			return ret.toString();
+		}
+	}
 
-  // Construct a new symbol table with a parent
-  public SymbolTable(SymbolTable parent) {
-    this.table = new HashMap<String, Symbol>();
-    this.parent = parent;
-  }
+	private Map<String, Symbol> table;
+	private SymbolTable parent;
 
-  // Add a new symbol
-  // Returns false if the symbol cannot be added (already in the scope)
-  public boolean add(Symbol sym) {
-    Symbol res = this.table.get(sym.ident);
-    if(res != null) {
-      return false;
-    }
+	public SymbolTable() {
+		this.table = new HashMap<String, Symbol>();
+		this.parent = null;
+	}
 
-    this.table.put(sym.ident, sym);
-    return true;
-  }
-  
-  // Remove a symbol
-  // Returns false if the symbol is not in the table (without looking at parent's)
-  public boolean remove(String ident) {
-    return this.table.remove(ident) != null;
-  }
+	public SymbolTable(SymbolTable parent) {
+		this.table = new HashMap<String, Symbol>();
+		this.parent = parent;
+	}
 
-  public Symbol lookup(String ident) {
-    Symbol res = this.table.get(ident);
+	public boolean add(String ident, Symbol sym) {
+		Symbol res = this.table.get(ident);
+		if (res != null) {
+			return false;
+		}
 
-    if((res == null) && (this.parent != null)) {
-      // Forward request
-      return this.parent.lookup(ident);
-    }
+		this.table.put(ident, sym);
+		return true;
+	}
 
-    return res; // Either the symbol or null
-  }
+	public boolean remove(String ident) {
+		return this.table.remove(ident) != null;
+	}
 
-  @Override public boolean equals(Object obj) {
-    if(obj == null) return false;
-    if(obj == this) return true;
-    if(!(obj instanceof SymbolTable)) return false;
-    SymbolTable o = (SymbolTable) obj;
-    return o.table.equals(this.table) &&
-      ((o.parent == null && this.parent == null) || o.parent.equals(this.parent));
-  }
+	public Symbol lookup(String ident) {
+		Symbol res = this.table.get(ident);
+
+		if ((res == null) && (this.parent != null)) {
+			return this.parent.lookup(ident);
+		}
+
+		return res;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder ret = new StringBuilder("to > ");
+		for (String s : this.table.keySet()) {
+			ret.append(s + ", ");
+		}
+
+		if (this.parent != null) {
+			ret.append("\n" + 1 + "tp > " + this.parent.toString());
+		}
+
+		return ret.toString();
+
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+		if (obj == this)
+			return true;
+		if (!(obj instanceof SymbolTable))
+			return false;
+		SymbolTable o = (SymbolTable) obj;
+		
+		List<ASD.Type> tt = new ArrayList<ASD.Type>();
+		List<ASD.Type> to = new ArrayList<ASD.Type>();
+		for(String s : this.table.keySet()) {
+			tt.add(this.table.get(s).variable.type);
+		}
+		for(String s : o.table.keySet()) {
+			to.add(o.table.get(s).variable.type);
+		}
+		if(!tt.equals(to)) {
+			return false;
+		}
+		
+		return 
+				 ((o.parent == null && this.parent == null) || o.parent.equals(this.parent));
+	}
 }

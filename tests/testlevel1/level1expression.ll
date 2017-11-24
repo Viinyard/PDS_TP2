@@ -2,26 +2,31 @@
 target triple = "x86_64-apple-macosx10.12.0"
 ; External declaration of the printf function
 declare i32 @printf(i8* noalias nocapture, ...)
+declare i32 @scanf(i8* noalias nocapture, ...)
 
 ; Actual code begins
 
 
-
 define i32 @main() {
-	%x =  alloca i32
-	%y =  alloca i32
-	%z =  alloca i32
-	store i32 4, i32* %x
-	store i32 8, i32* %y
-	%tmp1 = load i32, i32* %x
-	%tmp2 = load i32, i32* %y
-	%tmp3 = mul i32 %tmp1, %tmp2
-	%tmp4 = add i32 %tmp3, 10
-	store i32 %tmp4, i32* %z
-	%tmp5 = load i32, i32* %z
-	%tmp6 = mul i32 %tmp5, 2
-	%tmp7 = sub i32 %tmp6, 42
-	ret i32 %tmp7
+entry:
+	%0 = alloca i32
+	%1 = alloca i32
+	%2 = alloca i32
+	%3 = alloca i32
+	store i32 4, i32* %1
+	store i32 8, i32* %2
+	%4 = load i32, i32* %1
+	%5 = load i32, i32* %2
+	%6 = mul i32 %4, %5
+	%7 = add i32 %6, 10
+	store i32 %7, i32* %3
+	%8 = load i32, i32* %3
+	%9 = mul i32 %8, 2
+	%10 = sub i32 %9, 42
+	store i32 %10, i32* %0
+	%11 = load i32, i32* %0
+	ret i32 %11
+	ret i32 0
 }
 
 

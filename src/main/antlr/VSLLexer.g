@@ -22,6 +22,9 @@ fragment ASCII  : ~('\n'|'"');
 PO    : '(' ; // Left parenthesis
 PF    : ')' ;
 
+TO : '[';
+TC : ']';
+
 BO : '{';
 BF : '}';
 SEP : ',';

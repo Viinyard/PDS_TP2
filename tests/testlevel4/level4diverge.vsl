@@ -1,5 +1,7 @@
 FUNC VOID main() {
 	PRINT "Toto"
-	WHILE 1 DO {	INT x
+	INT n
+	n := 10
+	WHILE n-1 DO {	INT x
 			x := 1 } DONE
 	}
