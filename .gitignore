@@ -1,4 +1,5 @@
-tests/*.x
-test/*.out
-test/*.ll
+tests/*/*.x
+tests/*/*.out
+tests/*/*.ll
 /build
+/.gradle
