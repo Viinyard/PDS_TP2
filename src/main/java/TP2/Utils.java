@@ -4,7 +4,6 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 public class Utils {
-  private static int tmp = 0;
   private static int lab = 0;
   private static int glob = 0;
   private final static Pattern re = Pattern.compile("\\\\n");
@@ -17,13 +16,7 @@ public class Utils {
     return r.toString();
   }
 
-  public static void resettmp() {
-	  Utils.tmp = 0;
-  }
   // generate a new unique local identifier (starting with %)
-  public static String newtmp() {
-    return "" + Utils.tmp++;
-  }
 
   // generate a new unique label starting with str
   public static String newlab(String str) {

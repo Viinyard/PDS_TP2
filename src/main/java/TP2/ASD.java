@@ -24,7 +24,7 @@ public class ASD {
 		}
 
 		public Llvm.IR toIR() throws TypeException {
-			Llvm.IR ir = new Llvm.IR(Llvm.empty(), Llvm.empty());
+			Llvm.IR ir = new Llvm.IR();
 
 			for (Expression e : this.listExpression) {
 				ir.append(e.toIR().ir);
@@ -41,13 +41,11 @@ public class ASD {
 
 		public static class RetExpression {
 			public Llvm.IR ir;
-			public Type type;
-			public String result;
+			public Variable variable;
 
-			public RetExpression(Llvm.IR ir, Type type, String result) {
+			public RetExpression(Llvm.IR ir, Variable variable) {
 				this.ir = ir;
-				this.type = type;
-				this.result = result;
+				this.variable = variable;
 			}
 		}
 	}
@@ -69,9 +67,8 @@ public class ASD {
 
 		public RetExpression toIR() throws TypeException {
 			RetExpression ret = e.toIR();
-			ret.ir.appendCode(new Llvm.Return(new Variable(ret.type, ret.result).toLlvm()));
-
-			return new RetExpression(ret.ir, ret.type, ret.result);
+			ret.ir.appendCode(new Llvm.Return(ret.variable.toLlvm()));
+			return ret;
 		}
 	}
 
@@ -79,12 +76,14 @@ public class ASD {
 
 		private Variable fonction;
 		List<Expression> expressions;
-		List<Variable> args;
+		List<Argument> args;
+		Variable ret;
 
-		public Fonction(Variable fonction, List<Variable> args, List<Expression> expressions) {
+		public Fonction(Variable fonction, List<Argument> args, Variable ret, List<Expression> expressions) {
 			this.fonction = fonction;
 			this.expressions = expressions;
 			this.args = args;
+			this.ret = ret;
 		}
 
 		public String pp() {
@@ -92,117 +91,145 @@ public class ASD {
 		}
 
 		public RetExpression toIR() throws TypeException {
-			Utils.resettmp();
-			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.fonction.type,
-					this.fonction.ident);
+			RetExpression ret = new RetExpression(new Llvm.IR(), null);
 
 			List<Llvm.Variable> llvmArgs = new ArrayList<Llvm.Variable>();
-			for (Variable arg : this.args) {
-				llvmArgs.add(arg.toLlvm());
+			for (Argument arg : this.args) {
+				llvmArgs.add(arg.arg.toLlvm());
 			}
 
-			ret.ir.appendCode(new Llvm.Fonction(this.fonction.toLlvm(), llvmArgs));
+			ret.ir.appendHeader(new Llvm.Fonction(this.fonction.toLlvm(), llvmArgs));
 
-			ret.ir.appendCode(new Llvm.OpenBlock()); // TODO
-			ret.ir.appendCode(new Llvm.Label(new Variable(Variable.local_scope, new LabelType(), "entry").toLlvm()));
+			ret.ir.appendHeader(new Llvm.OpenBlock());
+
+			for (Argument arg : this.args) {
+				ret.ir.append(arg.toIR().ir);
+			}
+
+			ret.ir.appendHeader(new Llvm.Label(new Variable(Variable.local_scope, new LabelType()).toLlvm()));
+
+			for (Argument arg : this.args) {
+				ret.ir.appendHeader(new Llvm.Instanciation(arg.ptr.toLlvm()));
+				ret.ir.appendCode(new Llvm.Affectation(arg.ptr.toLlvm(), arg.arg.toLlvm()));
+			}
+
+			if (this.ret != null) {
+				ret.ir.appendHeader(new Llvm.Instanciation(this.ret.toLlvm()));
+				this.expressions.add(new ReturnStatement(new Value(this.ret)));
+			}
+
 			for (Expression s : this.expressions) {
 				ret.ir.append(s.toIR().ir);
 			}
 
 			if (this.fonction.type.equals(new VoidType())) {
-				ret.ir.appendCode(new Llvm.Return(new Variable(Variable.default_scope, new VoidType(), "").toLlvm()));
-			} else if (this.fonction.type.equals(new IntType())
-					&& this.fonction.var_name.toLowerCase().equals("main")) {
-				ret.ir.appendCode(new Llvm.Return(new Variable(Variable.default_scope, new IntType(), "0").toLlvm()));
+				ret.ir.appendCode(new Llvm.Return(new Variable(Variable.no_scope, new VoidType()).toLlvm()));
 			}
 
 			ret.ir.appendCode(new Llvm.CloseBlock());
 
+			ret.ir.linkFonction();
 			return ret;
 		}
 	}
-	
+
 	public static class ArrayElement extends Expression {
 
-		private Variable array, result;
-		private Variable resultInter;
+		private Variable array;
 		private Expression index;
 
 		public ArrayElement(Variable array, Expression index) {
 			assert (array.type instanceof PointerType);
 			assert (((PointerType) array.type).type instanceof ArrayType);
-			
+
 			this.array = array;
 			this.index = index;
-			
-			if(((PointerType) array.type).type instanceof PointerType) {
-				this.resultInter = new Variable(Variable.local_scope, ((PointerType) array.type).type, Utils.newtmp());
-				this.result = new Variable(Variable.local_scope, ((PointerType) this.resultInter.type), Utils.newtmp());
-			} else if(((PointerType) array.type).type instanceof ArrayType) {
-				Type t = ((PointerType) this.array.type).type;
-				Type t1 = t instanceof ArrayType ? ((ArrayType) t).type : ((PointerType) t).type;
-				this.result = new Variable(Variable.local_scope, t1, Utils.newtmp());
-			}
-		}
-		
-		public Variable getResult() {
-			return this.result;
 		}
 
 		@Override
 		public String pp() {
-			StringBuilder ret = new StringBuilder(this.array.pp());
-				ret.append("[" + this.index.pp() + "]");
+			StringBuilder ret = new StringBuilder();
 			return ret.toString();
 		}
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.array.type, "");
 
-			RetExpression index = this.index.toIR();
-			ret.ir.append(index.ir);
-			if(this.resultInter != null) {
-				ret.ir.appendCode(new Llvm.Load(this.array.toLlvm(), this.resultInter.toLlvm()));
-				ret.ir.appendCode(new Llvm.ArrayElement(this.result.toLlvm(), this.resultInter.toLlvm(),
-						null, new Variable(index.type, index.result).toLlvm()));
+			RetExpression ret = this.index.toIR();
+			Variable result = null;
+			if (((PointerType) this.array.type).type instanceof PointerType) {
+				RetExpression arrayValue = new Value(this.array).toIR();
+				ret.ir.append(arrayValue.ir);
+				Variable array = arrayValue.variable;
+				result = new Variable(arrayValue.variable.scope, arrayValue.variable.type);
+				ret.ir.appendCode(new Llvm.ArrayElement(result.toLlvm(), array.toLlvm(), null, ret.variable.toLlvm()));
 			} else {
-				ret.ir.appendCode(new Llvm.ArrayElement(this.result.toLlvm(), this.array.toLlvm(),
-						new Variable(new IntType(), "0").toLlvm(), new Variable(index.type, index.result).toLlvm()));
+				result = new Variable(Variable.local_scope, ((ArrayType) ((PointerType) this.array.type).type).type);
+				ret.ir.appendCode(new Llvm.ArrayElement(result.toLlvm(), this.array.toLlvm(),
+						new Variable(Variable.no_scope, new IntType(), "0").toLlvm(), ret.variable.toLlvm()));
 			}
 
-			return new RetExpression(ret.ir, this.result.type, this.result.ident);
+			return new RetExpression(ret.ir, result);
 		}
 
 	}
-	
-	public static class ArrayValue extends Expression {
 
-		private Variable result;
-		private ArrayElement ptr;
+	// public static class ArrayValue extends Expression {
+	//
+	// private Variable result;
+	// private ArrayElement ptr;
+	//
+	// public ArrayValue(ArrayElement ptr) {
+	// this.result = new Variable(Variable.local_scope, ((PointerType)
+	// ptr.getResult().type).type, Utils.newtmp());
+	// this.ptr = ptr;
+	// }
+	//
+	// public Variable getResult() {
+	// return this.result;
+	// }
+	//
+	// @Override
+	// public String pp() {
+	// return "todo"; // TODO
+	// }
+	//
+	// @Override
+	// public RetExpression toIR() throws TypeException {
+	// RetExpression ptr = this.ptr.toIR();
+	// RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(),
+	// Llvm.empty()), this.result.type,
+	// this.result.ident);
+	// ret.ir.append(ptr.ir);
+	// ret.ir.appendCode(new Llvm.Load(new Variable(ptr.type, ptr.result).toLlvm(),
+	// this.result.toLlvm()));
+	//
+	// return ret;
+	// }
+	//
+	// }
 
-		public ArrayValue(ArrayElement ptr) {
-			this.result = new Variable(Variable.local_scope, ((PointerType) ptr.getResult().type).type, Utils.newtmp());
-			this.ptr = ptr;
-		}
-		
-		public Variable getResult() {
-			return this.result;
+	public static class Argument extends Expression {
+
+		Variable arg;
+		Variable ptr;
+		String ident;
+
+		public Argument(Variable arg, String ident) {
+			this.arg = arg;
+			this.ptr = new Variable(arg.scope, new PointerType(arg.type));
+			this.ident = ident;
 		}
 
 		@Override
 		public String pp() {
-			return "todo"; // TODO
+			return "";
 		}
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-			RetExpression ptr = this.ptr.toIR();
-			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.result.type, this.result.ident);
-			ret.ir.append(ptr.ir);
-			ret.ir.appendCode(new Llvm.Load(new Variable(ptr.type, ptr.result).toLlvm(),
-					this.result.toLlvm()));
-
+			RetExpression ret = new RetExpression(new Llvm.IR(), this.ptr);
+			ret.ir.appendHeader(new Llvm.Argument(this.arg.toLlvm()));
 			return ret;
 		}
 
@@ -210,7 +237,7 @@ public class ASD {
 
 	public static class CallFonction extends Expression {
 
-		Variable fonction, result;
+		Variable fonction;
 		List<Expression> args;
 		String cast;
 
@@ -222,26 +249,20 @@ public class ASD {
 			this.fonction = fonction;
 			this.args = args;
 			this.cast = cast;
-			this.result = (this.fonction.type instanceof VoidType) ? null : new Variable(Variable.local_scope, fonction.type, Utils.newtmp());
-		}
-		
-		public Variable getResult() {
-			return this.result;
 		}
 
 		@Override
 		public String pp() {
-			StringBuilder ret = new StringBuilder(this.fonction.ident + "(");
-			for (Expression e : this.args) {
-				ret.append(e.pp());
-			}
-			ret.append(")");
+			StringBuilder ret = new StringBuilder();
 			return ret.toString();
 		}
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.fonction.type, (this.result != null ? this.result.ident : ""));
+			Variable result = (this.fonction.type.equals(new VoidType())) ? null
+					: new Variable(Variable.local_scope, this.fonction.type);
+
+			RetExpression ret = new RetExpression(new Llvm.IR(), result);
 
 			List<RetExpression> retargs = new ArrayList<RetExpression>();
 
@@ -254,9 +275,10 @@ public class ASD {
 			List<Llvm.Variable> varArgs = new ArrayList<Llvm.Variable>();
 
 			for (RetExpression r : retargs) {
-				varArgs.add(new Variable(r.type, r.result).toLlvm());
+				varArgs.add(r.variable.toLlvm());
 			}
-			ret.ir.appendCode(new Llvm.CallFonction(this.fonction.toLlvm(), this.cast, this.result == null ? null : this.result.toLlvm(), varArgs));
+			ret.ir.appendCode(new Llvm.CallFonction(this.fonction.toLlvm(), this.cast,
+					result == null ? null : result.toLlvm(), varArgs));
 
 			return ret;
 		}
@@ -275,10 +297,7 @@ public class ASD {
 		}
 
 		public RetExpression toIR() throws TypeException {
-			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.variable.type, this.variable.ident);
-			// ret.ir.appendCode(new Llvm.DeclareFonction(type.toLlvmType(), ident));
-
-			return ret;
+			return new RetExpression(new Llvm.IR(), this.variable);
 		}
 	}
 
@@ -289,14 +308,12 @@ public class ASD {
 	public static class BooleanExpression extends Expression {
 
 		private Expression expression;
-		private Variable result;
 
 		public BooleanExpression(Expression expression) {
 			this.expression = expression;
-			this.result = new Variable(Variable.local_scope, new BooleanType(), Utils.newtmp());
-			
+
 		}
-		
+
 		@Override
 		public String pp() {
 			return this.expression.pp();
@@ -304,20 +321,7 @@ public class ASD {
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-			RetExpression left = this.expression.toIR(), right = new IntegerExpression(0).toIR();
-
-			if (!left.type.equals(right.type)) {
-				throw new TypeException("type mismatch: have " + left.type + " and " + right.type);
-			}
-
-			left.ir.append(right.ir);
-
-			left.ir.appendCode(new Llvm.ICMP(this.result.toLlvm(),
-					new Llvm.Variable(Variable.local_scope, left.type.toLlvmType(), left.result),
-					new DifferentCond().toLlvmCond(),
-					new Llvm.Variable(Variable.local_scope, right.type.toLlvmType(), right.result)));
-
-			return new RetExpression(left.ir, result.type, result.ident);
+			return new Condition(this.expression, new DifferentCond(), new IntegerExpression(0)).toIR();
 		}
 
 	}
@@ -325,36 +329,30 @@ public class ASD {
 	// OK
 	public static class StringConstant extends Expression {
 
-		private Variable string, value;
 		private String text;
 
 		public StringConstant(String text) {
-			LLVMStringConstant c = Utils.stringTransform(text);
-			this.string = new Variable(Variable.global_scope,
-					new PointerType(new ArrayType(new PointerType(new CharType()), String.valueOf(c.length))),
-					Utils.newglob(".str"));
-			this.value = new Variable(Variable.local_scope,((ArrayType) ((PointerType) this.string.type).type).type, Utils.newtmp());
-			this.text = "\"" + c.str + "\"";
-		}
-		
-		public StringConstant(Variable value, String text) {
-			this(text);
-			this.value = value;
+			this.text = text;
 		}
 
 		@Override
 		public String pp() {
-			return this.text;
+			return "";
 		}
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.value.type, this.value.ident);
+			LLVMStringConstant c = Utils.stringTransform(this.text);
+			Variable string = new Variable(Variable.global_scope,
+					new PointerType(new ArrayType(new PointerType(new CharType()), c.length)), Utils.newglob(".str"));
+			Variable result = new Variable(Variable.local_scope, ((ArrayType) ((PointerType) string.type).type).type);
+			RetExpression ret = new RetExpression(new Llvm.IR(), result);
 
-			ret.ir.appendHeader(new Llvm.StringConstant(this.string.toLlvm(), this.text));
+			ret.ir.appendGlobal(new Llvm.StringConstant(string.toLlvm(), "\"" + c.str + "\""));
 
-			ret.ir.appendCode(new Llvm.ArrayElement(value.toLlvm(), string.toLlvm(),
-					new Variable(new IntType(), "0").toLlvm(), new Variable(new IntType(), "0").toLlvm()));
+			ret.ir.appendCode(new Llvm.ArrayElement(result.toLlvm(), string.toLlvm(),
+					new Variable(Variable.no_scope, new IntType(), "0").toLlvm(),
+					new Variable(Variable.no_scope, new IntType(), "0").toLlvm()));
 
 			return ret;
 		}
@@ -362,14 +360,10 @@ public class ASD {
 
 	public static class PrintFunction extends Expression {
 
-		private Variable fonction, result, pattern;
 		List<Expression> args;
 
 		public PrintFunction(List<Expression> args) {
 			this.args = args;
-			this.fonction = new Variable(Variable.global_scope, new IntType(), "printf");
-			this.pattern = new Variable(Variable.local_scope, new PointerType(new CharType()), Utils.newtmp());
-			this.result = new Variable(Variable.local_scope, this.fonction.type, Utils.newtmp());
 		}
 
 		@Override
@@ -387,37 +381,36 @@ public class ASD {
 
 			List<RetExpression> retargs = new ArrayList<RetExpression>();
 
-			for(Expression e : this.args) {
+			for (Expression e : this.args) {
 				retargs.add(e.toIR());
 			}
 
-			StringBuilder pattern = new StringBuilder();
+			StringBuilder pattern_value = new StringBuilder();
 
 			retargs.forEach(p -> {
-				pattern.append(p.type.toPrintPattern());
+				pattern_value.append(p.variable.type.toPrintPattern());
 			});
+			RetExpression patternExp = new StringConstant(pattern_value.toString()).toIR();
 
-			RetExpression patternExp = new StringConstant(this.pattern, pattern.toString()).toIR();
+			Variable fonction = new Variable(Variable.global_scope, new IntType(), "printf");
+			Variable result = new Variable(Variable.local_scope, fonction.type);
 
-			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.result.type,
-					this.result.ident);
+			RetExpression ret = new RetExpression(new Llvm.IR(), result);
 
-
-			for(RetExpression r : retargs) {
+			for (RetExpression r : retargs) {
 				ret.ir.append(r.ir);
 			}
 
 			ret.ir.append(patternExp.ir);
 
 			List<Llvm.Variable> varArgs = new ArrayList<Llvm.Variable>();
-			varArgs.add(new Variable(patternExp.type, patternExp.result).toLlvm());
+			varArgs.add(patternExp.variable.toLlvm());
 
-			for(RetExpression r : retargs) {
-				varArgs.add(new Variable(r.type, r.result).toLlvm());
+			for (RetExpression r : retargs) {
+				varArgs.add(r.variable.toLlvm());
 			}
 
-			ret.ir.appendCode(new Llvm.CallFonction(this.fonction.toLlvm(), "(i8*, ...)", this.result.toLlvm(),
-					varArgs));
+			ret.ir.appendCode(new Llvm.CallFonction(fonction.toLlvm(), "(i8*, ...)", result.toLlvm(), varArgs));
 
 			return ret;
 		}
@@ -425,72 +418,91 @@ public class ASD {
 	}
 
 	// OK
+	public static class Pointeur extends Variable {
+
+		private Type type;
+
+		public Type getType() {
+			return this.type;
+		}
+
+		public Pointeur(int scope, Type type) {
+			super(scope, new PointerType(type));
+			this.type = type;
+		}
+
+	}
+
 	public static class Variable extends Expression {
 
 		public static final int local_scope = 0;
 		public static final int global_scope = 1;
-		public static final int default_scope = 2;
+		public static final int no_scope = 2;
 
-		private static final String[] scope_token = { "%", "@", "" };
+		private Llvm.Variable llvm_Variable;
 
 		Type type;
-		String var_name;
-		String ident;
 		int scope;
+		String value;
 
 		public String toString() {
-			return type + " " + ident + " " + scope + " " + var_name;
+			return type + " " + scope;
 		}
 
-		public Variable(Type type, String ident) {
-			this(Variable.default_scope, type, ident);
-		}
-
-		public Variable(int scope, Type type, String ident) {
-			//assert (type instanceof PointerType) : ident + " of type : " + type + " is not a pointer ";
-			this.type = type;
-			this.var_name = ident;
-			this.ident = Variable.scope_token[scope] + ident;
-			this.scope = scope;
+		public Variable(int scope, Type type) {
+			this(scope, type, null);
 		}
 
 		@Override
-		public boolean equals(Object obj) {
-			if (obj == null)
+		public boolean equals(Object other) {
+			if (other == null)
 				return false;
-			if (obj == this)
+			if (other == this)
 				return true;
-			if (!(obj instanceof Variable))
+			if (!(other instanceof Variable))
 				return false;
-			Variable o = (Variable) obj;
-			return this.type.equals(o.type) && this.ident.equals(o.ident) && this.scope == o.scope;
+			Variable o = (Variable) other;
+			if (this.scope != o.scope)
+				return false;
+			if (this.value == null || o.value == null)
+				return false;
+
+			return this.type.equals(o.type) && this.value.equals(o.value);
+
+		}
+
+		public Variable(int scope, Type type, String value) {
+			this.type = type;
+			this.scope = scope;
+			this.value = value;
+		}
+
+		public Llvm.Variable toLlvm() {
+			if (this.llvm_Variable == null) {
+				this.llvm_Variable = new Llvm.Variable(this.scope, type.toLlvmType(), this.value);
+			}
+			return this.llvm_Variable;
 		}
 
 		@Override
 		public String pp() {
-			return this.ident;
-		}
-
-		public Llvm.Variable toLlvm() {
-			return new Llvm.Variable(this.scope, this.type.toLlvmType(), this.ident);
+			// TODO Auto-generated method stub
+			return null;
 		}
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-			return new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.type, this.ident);
+			return new RetExpression(new Llvm.IR(), this);
 		}
+
 	}
 
 	public static class ReadFunction extends Expression {
 
 		private List<Expression> args;
-		private Variable fonction, result, pattern;
 
 		public ReadFunction(List<Expression> args) {
 			this.args = args;
-			this.fonction = new Variable(Variable.global_scope, new IntType(), "scanf");
-			this.pattern = new Variable(Variable.local_scope, new PointerType(new CharType()), Utils.newtmp());
-			this.result = new Variable(Variable.local_scope, this.fonction.type, Utils.newtmp());
 		}
 
 		@Override
@@ -508,32 +520,30 @@ public class ASD {
 					e.printStackTrace();
 				}
 			});
-			StringBuilder pattern = new StringBuilder();
+			StringBuilder pattern_value = new StringBuilder();
 			List<Variable> vars = new ArrayList<Variable>();
-			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.result.type,
-					this.result.ident);
-			for(Expression r : this.args) {
+			Variable fonction = new Variable(Variable.global_scope, new IntType(), "scanf");
+			Variable result = new Variable(Variable.local_scope, fonction.type);
+			RetExpression ret = new RetExpression(new Llvm.IR(), result);
+			for (Expression r : this.args) {
 				RetExpression ex = r.toIR();
 				ret.ir.append(ex.ir);
-				Variable v = new Variable(ex.type, ex.result);
+				Variable v = ex.variable;
 				vars.add(v);
-				pattern.append(v.type.toPrintPattern());
+				pattern_value.append(v.type.toPrintPattern());
 			}
-
-			RetExpression patternExp = new StringConstant(this.pattern, pattern.toString()).toIR();
-
+			RetExpression patternExp = new StringConstant(pattern_value.toString()).toIR();
 
 			ret.ir.append(patternExp.ir);
 
 			List<Llvm.Variable> varArgs = new ArrayList<Llvm.Variable>();
-			varArgs.add(new Variable(patternExp.type, patternExp.result).toLlvm());
+			varArgs.add(patternExp.variable.toLlvm());
 
-			for(Variable v : vars) {
+			for (Variable v : vars) {
 				varArgs.add(v.toLlvm());
-				ret.ir.append(v.toIR().ir);
 			}
 
-			ret.ir.appendCode(new Llvm.CallFonction(fonction.toLlvm(), "(i8*, ...)", this.result.toLlvm(), varArgs));
+			ret.ir.appendCode(new Llvm.CallFonction(fonction.toLlvm(), "(i8*, ...)", result.toLlvm(), varArgs));
 
 			return ret;
 		}
@@ -542,43 +552,33 @@ public class ASD {
 	// OK
 	public static class Value extends Expression {
 
-		private Variable variable;
-		private Variable result;
+		private Expression variable;
 
-		public Value(Variable variable) {
-			assert (variable.type instanceof PointerType);
+		public Value(Expression variable) {
 			this.variable = variable;
-			this.result = new Variable(Variable.local_scope, ((PointerType) variable.type).type, Utils.newtmp());
-		}
-		
-		public Variable getResult() {
-			return this.result;
 		}
 
 		@Override
 		public String pp() {
-			return this.variable.ident;
+			return null;
 		}
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-//			Variable value = new Variable(Variable.local_scope, ((PointerType) this.variable.type).type, Utils.newtmp());
-			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()),
-					this.result.type, this.result.ident);
-			ret.ir.appendCode(new Llvm.Load(this.variable.toLlvm(),
-					this.result.toLlvm()));
-			return ret;
+			RetExpression ret = this.variable.toIR();
+			Variable result = new Variable(Variable.local_scope, ((PointerType) ret.variable.type).type);
+			ret.ir.appendCode(new Llvm.Load(ret.variable.toLlvm(), result.toLlvm()));
+			return new RetExpression(ret.ir, result);
 		}
 	}
 
 	// OK
 	public static class Affectation extends Expression {
 
-		Variable variable;
+		Expression variable;
 		Expression expression;
 
-		public Affectation(Variable variable, Expression expression) {
-			assert(variable.type instanceof PointerType);
+		public Affectation(Expression variable, Expression expression) {
 			this.variable = variable;
 			this.expression = expression;
 		}
@@ -590,27 +590,36 @@ public class ASD {
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-			RetExpression value = this.expression.toIR();
+			RetExpression ret = new RetExpression(new Llvm.IR(), null);
 			RetExpression variable = this.variable.toIR();
-			value.ir.append(variable.ir);
-			value.ir.appendCode(new Llvm.Affectation(
-					this.variable.toLlvm(),
-					new Llvm.Variable(Variable.local_scope, value.type.toLlvmType(), value.result)));
+			RetExpression value = this.expression.toIR();
 
-			return value;
+			if (!(variable.variable.type instanceof PointerType)
+					|| !(((PointerType) variable.variable.type).type instanceof IntType)) {
+				throw new IllegalArgumentException(variable.variable.type + " is not assignable !");
+			}
+			if (!((ASD.PointerType) variable.variable.type).type.equals(value.variable.type)) {
+				throw new IllegalArgumentException("illegal type exception : found " + value.variable.type + " need "
+						+ ((PointerType) variable.variable.type).type);
+			}
+
+			ret.ir.append(value.ir);
+			ret.ir.append(variable.ir);
+			ret.ir.appendCode(new Llvm.Affectation(variable.variable.toLlvm(), value.variable.toLlvm()));
+
+			return ret;
 		}
 	}
 
 	public static class ArrayInstanciation extends Expression {
 
 		private Variable variable;
-		private Expression expression;
-		
-		public ArrayInstanciation(Variable variable, Expression expression) {
+		private int size;
+
+		public ArrayInstanciation(Variable variable, int size) {
 			this.variable = variable;
-			this.expression = expression;
 		}
-		
+
 		@Override
 		public String pp() {
 			// TODO Auto-generated method stub
@@ -619,19 +628,17 @@ public class ASD {
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.variable.type,
-					this.variable.ident);
-			RetExpression exp = this.expression.toIR();
-			ret.ir.append(exp.ir);
-			
-			Variable array = new Variable(new PointerType(new ArrayType(this.variable.type, exp.result)), this.variable.ident);
-			
-			ret.ir.appendCode(new Llvm.Instanciation(
-					array.toLlvm()));
+			RetExpression ret = new RetExpression(new Llvm.IR(), this.variable);
+
+			Variable array = new Variable(Variable.local_scope,
+					new PointerType(new ArrayType(this.variable.type, size)));
+
+			ret.ir.appendHeader(new Llvm.Instanciation(array.toLlvm()));
 			return ret;
 		}
-		
+
 	}
+
 	// OK
 	public static class Instanciation extends Expression {
 
@@ -644,15 +651,13 @@ public class ASD {
 
 		@Override
 		public String pp() {
-			return this.variable.type.pp() + " " + this.variable.pp() + "\n";
+			return "";
 		}
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-			RetExpression ret = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), this.variable.type,
-					this.variable.ident);
-			ret.ir.appendCode(new Llvm.Instanciation(
-					new Llvm.Variable(this.variable.scope, this.variable.type.toLlvmType(), this.variable.ident)));
+			RetExpression ret = new RetExpression(new Llvm.IR(), this.variable);
+			ret.ir.appendHeader(new Llvm.Instanciation(this.variable.toLlvm()));
 			return ret;
 		}
 	}
@@ -761,17 +766,11 @@ public class ASD {
 
 		private Expression left, right;
 		private Cond cond;
-		private Variable result;
 
 		public Condition(Expression left, Cond cond, Expression right) {
-			this.result = new Variable(Variable.local_scope, new BooleanType(), Utils.newtmp());
 			this.left = left;
 			this.cond = cond;
 			this.right = right;
-		}
-		
-		public Variable getResult() {
-			return this.result;
 		}
 
 		@Override
@@ -783,18 +782,17 @@ public class ASD {
 		public RetExpression toIR() throws TypeException {
 			RetExpression left = this.left.toIR(), right = this.right.toIR();
 
-			if (!left.type.equals(right.type)) {
-				throw new TypeException("type mismatch: have " + left.type + " and " + right.type);
+			if (!left.variable.type.equals(right.variable.type)) {
+				throw new TypeException("type mismatch: have " + left.variable.type + " and " + right.variable.type);
 			}
 
+			Variable result = new Variable(Variable.local_scope, new BooleanType());
 			left.ir.append(right.ir);
 
-			left.ir.appendCode(new Llvm.ICMP(this.result.toLlvm(),
-					new Llvm.Variable(Variable.local_scope, left.type.toLlvmType(), left.result),
-					this.cond.toLlvmCond(),
-					new Llvm.Variable(Variable.local_scope, right.type.toLlvmType(), right.result)));
+			left.ir.appendCode(new Llvm.ICMP(result.toLlvm(), left.variable.toLlvm(), this.cond.toLlvmCond(),
+					right.variable.toLlvm()));
 
-			return new RetExpression(left.ir, result.type, result.ident);
+			return new RetExpression(left.ir, result);
 		}
 
 	}
@@ -824,10 +822,10 @@ public class ASD {
 		@Override
 		public RetExpression toIR() throws TypeException {
 			RetExpression boucle = this.condition.toIR();
-			Variable cond = new Variable(boucle.type, boucle.result);
-			Variable labelThen = new Variable(Variable.local_scope, new LabelType(), Utils.newlab("then")),
-					labelElse = new Variable(Variable.local_scope, new LabelType(), Utils.newlab("else")),
-					labelFi = new Variable(Variable.local_scope, new LabelType(), Utils.newlab("fi"));
+			Variable cond = boucle.variable;
+			Variable labelThen = new Variable(Variable.local_scope, new LabelType()),
+					labelElse = new Variable(Variable.local_scope, new LabelType()),
+					labelFi = new Variable(Variable.local_scope, new LabelType());
 
 			boucle.ir.appendCode(new Llvm.BRCond(cond.toLlvm(), labelThen.toLlvm(), labelElse.toLlvm()));
 
@@ -857,7 +855,7 @@ public class ASD {
 
 			boucle.ir.appendCode(new Llvm.Label(labelFi.toLlvm()));
 
-			return new RetExpression(boucle.ir, new VoidType(), "");
+			return new RetExpression(boucle.ir, null);
 		}
 
 	}
@@ -885,12 +883,12 @@ public class ASD {
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-			RetExpression boucle = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), new VoidType(), "");
+			RetExpression boucle = new RetExpression(new Llvm.IR(), null);
 			RetExpression condition = this.condition.toIR();
-			Variable cond = new Variable(Variable.default_scope, condition.type, condition.result);
-			Variable labelEntry = new Variable(Variable.local_scope, new LabelType(), Utils.newlab("entry")),
-					labelDo = new Variable(Variable.local_scope, new LabelType(), Utils.newlab("do")),
-					labelDone = new Variable(Variable.local_scope, new LabelType(), Utils.newlab("done"));
+			Variable cond = condition.variable;
+			Variable labelEntry = new Variable(Variable.local_scope, new LabelType()),
+					labelDo = new Variable(Variable.local_scope, new LabelType()),
+					labelDone = new Variable(Variable.local_scope, new LabelType());
 
 			boucle.ir.appendCode(new Llvm.BR(labelEntry.toLlvm()));
 			boucle.ir.appendCode(new Llvm.Label(labelEntry.toLlvm()));
@@ -937,12 +935,12 @@ public class ASD {
 
 		@Override
 		public RetExpression toIR() throws TypeException {
-			RetExpression boucle = new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), new VoidType(), "");
+			RetExpression boucle = new RetExpression(new Llvm.IR(), null);
 			RetExpression condition = this.condition.toIR();
 			boucle.ir.append(condition.ir);
-			Variable cond = new Variable(condition.type, condition.result);
-			Variable labelThen = new Variable(Variable.local_scope, new LabelType(), Utils.newlab("then")),
-					labelFi = new Variable(Variable.local_scope, new LabelType(), Utils.newlab("fi"));
+			Variable cond = condition.variable;
+			Variable labelThen = new Variable(Variable.local_scope, new LabelType()),
+					labelFi = new Variable(Variable.local_scope, new LabelType());
 
 			boucle.ir.appendCode(new Llvm.BRCond(cond.toLlvm(), labelThen.toLlvm(), labelFi.toLlvm()));
 
@@ -951,7 +949,7 @@ public class ASD {
 			for (Expression e : this.blockThen) {
 				boucle.ir.append(e.toIR().ir);
 			}
-			
+
 			boucle.ir.appendCode(new Llvm.BR(labelFi.toLlvm()));
 
 			boucle.ir.appendCode(new Llvm.Label(labelFi.toLlvm()));
@@ -979,7 +977,8 @@ public class ASD {
 		}
 
 		public RetExpression toIR() {
-			return new RetExpression(new Llvm.IR(Llvm.empty(), Llvm.empty()), new IntType(), "" + this.value);
+			return new RetExpression(new Llvm.IR(),
+					new Variable(Variable.no_scope, new IntType(), Integer.toString(this.value)));
 		}
 	}
 
@@ -987,10 +986,8 @@ public class ASD {
 	public static class AddExpression extends Expression {
 
 		private Expression left, right;
-		private Variable result;
 
-		public AddExpression(Variable result, Expression left, Expression right) {
-			this.result = result;
+		public AddExpression(Expression left, Expression right) {
 			this.left = left;
 			this.right = right;
 		}
@@ -1003,15 +1000,17 @@ public class ASD {
 			RetExpression left = this.left.toIR();
 			RetExpression right = this.right.toIR();
 
-			if (!left.type.equals(right.type)) {
-				throw new TypeException("type mismatch: have " + left.type + " and " + right.type);
+			if (!left.variable.type.equals(right.variable.type)) {
+				throw new TypeException("type mismatch: have " + left.variable.type + " and " + right.variable.type);
 			}
+
+			Variable result = new Variable(Variable.local_scope, left.variable.type);
 
 			left.ir.append(right.ir);
 
-			left.ir.appendCode(new Llvm.Add(this.result.toLlvm(), left.result, right.result));
+			left.ir.appendCode(new Llvm.Add(result.toLlvm(), left.variable.toLlvm(), right.variable.toLlvm()));
 
-			return new RetExpression(left.ir, this.result.type, this.result.ident);
+			return new RetExpression(left.ir, result);
 		}
 	}
 
@@ -1019,10 +1018,8 @@ public class ASD {
 	public static class MulExpression extends Expression {
 
 		private Expression left, right;
-		private Variable result;
 
-		public MulExpression(Variable result, Expression left, Expression right) {
-			this.result = result;
+		public MulExpression(Expression left, Expression right) {
 			this.left = left;
 			this.right = right;
 		}
@@ -1035,15 +1032,17 @@ public class ASD {
 			RetExpression left = this.left.toIR();
 			RetExpression right = this.right.toIR();
 
-			if (!left.type.equals(right.type)) {
-				throw new TypeException("type mismatch: have " + left.type + " and " + right.type);
+			if (!left.variable.type.equals(right.variable.type)) {
+				throw new TypeException("type mismatch: have " + left.variable.type + " and " + right.variable.type);
 			}
+
+			Variable result = new Variable(Variable.local_scope, left.variable.type);
 
 			left.ir.append(right.ir);
 
-			left.ir.appendCode(new Llvm.Mul(this.result.toLlvm(), left.result, right.result));
+			left.ir.appendCode(new Llvm.Mul(result.toLlvm(), left.variable.toLlvm(), right.variable.toLlvm()));
 
-			return new RetExpression(left.ir, this.result.type, this.result.ident);
+			return new RetExpression(left.ir, result);
 		}
 	}
 
@@ -1051,10 +1050,8 @@ public class ASD {
 	public static class SignedDivExpression extends Expression {
 
 		private Expression left, right;
-		private Variable result;
 
-		public SignedDivExpression(Variable result, Expression left, Expression right) {
-			this.result = result;
+		public SignedDivExpression(Expression left, Expression right) {
 			this.left = left;
 			this.right = right;
 		}
@@ -1067,15 +1064,16 @@ public class ASD {
 			RetExpression left = this.left.toIR();
 			RetExpression right = this.right.toIR();
 
-			if (!left.type.equals(right.type)) {
-				throw new TypeException("type mismatch: have " + left.type + " and " + right.type);
+			if (!left.variable.type.equals(right.variable.type)) {
+				throw new TypeException("type mismatch: have " + left.variable.type + " and " + right.variable.type);
 			}
 
+			Variable result = new Variable(Variable.local_scope, left.variable.type);
 			left.ir.append(right.ir);
 
-			left.ir.appendCode(new Llvm.Div(this.result.toLlvm(), left.result, right.result));
+			left.ir.appendCode(new Llvm.Div(result.toLlvm(), left.variable.toLlvm(), right.variable.toLlvm()));
 
-			return new RetExpression(left.ir, this.result.type, this.result.ident);
+			return new RetExpression(left.ir, result);
 		}
 	}
 
@@ -1083,11 +1081,9 @@ public class ASD {
 	public static class SubExpression extends Expression {
 
 		private Expression left, right;
-		private Variable result;
 
- 		public SubExpression(Variable result, Expression left, Expression right) {
-			this.result = result;
- 			this.left = left;
+		public SubExpression(Expression left, Expression right) {
+			this.left = left;
 			this.right = right;
 		}
 
@@ -1099,14 +1095,16 @@ public class ASD {
 			RetExpression left = this.left.toIR();
 			RetExpression right = this.right.toIR();
 
-			if (!left.type.equals(right.type)) {
-				throw new TypeException("type mismatch: have " + left.type + " and " + right.type);
+			if (!left.variable.type.equals(right.variable.type)) {
+				throw new TypeException("type mismatch: have " + left.variable.type + " and " + right.variable.type);
 			}
+
+			Variable result = new Variable(Variable.local_scope, left.variable.type);
 
 			left.ir.append(right.ir);
 
-			left.ir.appendCode(new Llvm.Sub(this.result.toLlvm(), left.result, right.result));
-			return new RetExpression(left.ir, this.result.type, this.result.ident);
+			left.ir.appendCode(new Llvm.Sub(result.toLlvm(), left.variable.toLlvm(), right.variable.toLlvm()));
+			return new RetExpression(left.ir, result);
 		}
 	}
 
@@ -1126,6 +1124,7 @@ public class ASD {
 		public abstract Llvm.Type toLlvmType();
 
 		public abstract String toString();
+
 	}
 
 	// OK
@@ -1290,9 +1289,9 @@ public class ASD {
 	static class ArrayType extends Type {
 
 		Type type;
-		String size;
+		int size;
 
-		public ArrayType(Type type, String size) {
+		public ArrayType(Type type, int size) {
 			assert (type instanceof PointerType);
 			this.type = type;
 			this.size = size;

@@ -142,7 +142,6 @@ public class SymbolTable {
 		if(!tt.equals(to)) {
 			return false;
 		}
-		
 		return 
 				 ((o.parent == null && this.parent == null) || o.parent.equals(this.parent));
 	}

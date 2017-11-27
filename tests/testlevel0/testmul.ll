@@ -8,14 +8,13 @@ declare i32 @scanf(i8* noalias nocapture, ...)
 
 
 define i32 @main() {
-entry:
-	%0 = alloca i32
-	%1 = mul i32 7, 3
-	%2 = mul i32 %1, 2
-	store i32 %2, i32* %0
-	%3 = load i32, i32* %0
-	ret i32 %3
-	ret i32 0
+; <label>:0
+	%1 = alloca i32
+	%2 = mul i32 7, 3
+	%3 = mul i32 %2, 2
+	store i32 %3, i32* %1
+	%4 = load i32, i32* %1
+	ret i32 %4
 }
 
 

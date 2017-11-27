@@ -9,123 +9,123 @@ declare i32 @scanf(i8* noalias nocapture, ...)
 @.str1 = private unnamed_addr constant [2 x i8]c"+\00", align 1
 @.str2 = private unnamed_addr constant [4 x i8]c" = \00", align 1
 @.str3 = private unnamed_addr constant [2 x i8]c"\0A\00", align 1
-@.str24 = private unnamed_addr constant [13 x i8]c"%d%s%d%s%d%s\00", align 1
-@.str4 = private unnamed_addr constant [2 x i8]c"-\00", align 1
-@.str5 = private unnamed_addr constant [4 x i8]c" = \00", align 1
-@.str6 = private unnamed_addr constant [2 x i8]c"\0A\00", align 1
-@.str25 = private unnamed_addr constant [13 x i8]c"%d%s%d%s%d%s\00", align 1
-@.str7 = private unnamed_addr constant [2 x i8]c"*\00", align 1
-@.str8 = private unnamed_addr constant [4 x i8]c" = \00", align 1
-@.str9 = private unnamed_addr constant [2 x i8]c"\0A\00", align 1
-@.str26 = private unnamed_addr constant [13 x i8]c"%d%s%d%s%d%s\00", align 1
-@.str10 = private unnamed_addr constant [2 x i8]c"/\00", align 1
-@.str11 = private unnamed_addr constant [4 x i8]c" = \00", align 1
-@.str12 = private unnamed_addr constant [2 x i8]c"\0A\00", align 1
-@.str27 = private unnamed_addr constant [13 x i8]c"%d%s%d%s%d%s\00", align 1
-@.str13 = private unnamed_addr constant [2 x i8]c"+\00", align 1
+@.str4 = private unnamed_addr constant [13 x i8]c"%d%s%d%s%d%s\00", align 1
+@.str5 = private unnamed_addr constant [2 x i8]c"-\00", align 1
+@.str6 = private unnamed_addr constant [4 x i8]c" = \00", align 1
+@.str7 = private unnamed_addr constant [2 x i8]c"\0A\00", align 1
+@.str8 = private unnamed_addr constant [13 x i8]c"%d%s%d%s%d%s\00", align 1
+@.str9 = private unnamed_addr constant [2 x i8]c"*\00", align 1
+@.str10 = private unnamed_addr constant [4 x i8]c" = \00", align 1
+@.str11 = private unnamed_addr constant [2 x i8]c"\0A\00", align 1
+@.str12 = private unnamed_addr constant [13 x i8]c"%d%s%d%s%d%s\00", align 1
+@.str13 = private unnamed_addr constant [2 x i8]c"/\00", align 1
 @.str14 = private unnamed_addr constant [4 x i8]c" = \00", align 1
 @.str15 = private unnamed_addr constant [2 x i8]c"\0A\00", align 1
-@.str28 = private unnamed_addr constant [13 x i8]c"%d%s%d%s%d%s\00", align 1
-@.str16 = private unnamed_addr constant [4 x i8]c"* (\00", align 1
+@.str16 = private unnamed_addr constant [13 x i8]c"%d%s%d%s%d%s\00", align 1
 @.str17 = private unnamed_addr constant [2 x i8]c"+\00", align 1
-@.str18 = private unnamed_addr constant [5 x i8]c") = \00", align 1
+@.str18 = private unnamed_addr constant [4 x i8]c" = \00", align 1
 @.str19 = private unnamed_addr constant [2 x i8]c"\0A\00", align 1
-@.str29 = private unnamed_addr constant [17 x i8]c"%d%s%d%s%d%s%d%s\00", align 1
-@.str20 = private unnamed_addr constant [4 x i8]c"*  \00", align 1
-@.str21 = private unnamed_addr constant [2 x i8]c"+\00", align 1
-@.str22 = private unnamed_addr constant [5 x i8]c"  = \00", align 1
-@.str23 = private unnamed_addr constant [2 x i8]c"\0A\00", align 1
+@.str20 = private unnamed_addr constant [13 x i8]c"%d%s%d%s%d%s\00", align 1
+@.str21 = private unnamed_addr constant [4 x i8]c"* (\00", align 1
+@.str22 = private unnamed_addr constant [2 x i8]c"+\00", align 1
+@.str23 = private unnamed_addr constant [5 x i8]c") = \00", align 1
+@.str24 = private unnamed_addr constant [2 x i8]c"\0A\00", align 1
+@.str25 = private unnamed_addr constant [17 x i8]c"%d%s%d%s%d%s%d%s\00", align 1
+@.str26 = private unnamed_addr constant [4 x i8]c"*  \00", align 1
+@.str27 = private unnamed_addr constant [2 x i8]c"+\00", align 1
+@.str28 = private unnamed_addr constant [5 x i8]c"  = \00", align 1
+@.str29 = private unnamed_addr constant [2 x i8]c"\0A\00", align 1
 @.str30 = private unnamed_addr constant [17 x i8]c"%d%s%d%s%d%s%d%s\00", align 1
 
 define void @main() {
-entry:
+; <label>:0
 	call void @expr(i32 1, i32 3)
 	call void @expr(i32 5, i32 2)
 	ret void 
 }
 
 define void @expr(i32, i32) {
-entry:
-	%2 = alloca i32
+; <label>:2
 	%3 = alloca i32
-	store i32 %0, i32* %2
-	store i32 %1, i32* %3
-	%4 = load i32, i32* %2
-	%5 = getelementptr inbounds [2 x i8], [2 x i8]* @.str1, i32 0, i32 0
-	%6 = load i32, i32* %3
-	%7 = getelementptr inbounds [4 x i8], [4 x i8]* @.str2, i32 0, i32 0
-	%8 = load i32, i32* %2
+	%4 = alloca i32
+	store i32 %0, i32* %3
+	store i32 %1, i32* %4
+	%5 = load i32, i32* %3
+	%6 = getelementptr inbounds [2 x i8], [2 x i8]* @.str1, i32 0, i32 0
+	%7 = load i32, i32* %4
+	%8 = getelementptr inbounds [4 x i8], [4 x i8]* @.str2, i32 0, i32 0
 	%9 = load i32, i32* %3
-	%10 = add i32 %8, %9
-	%11 = getelementptr inbounds [2 x i8], [2 x i8]* @.str3, i32 0, i32 0
-	%12 = getelementptr inbounds [13 x i8], [13 x i8]* @.str24, i32 0, i32 0
-	%13 = call i32 (i8*, ...) @printf(i8* %12, i32 %4, i8* %5, i32 %6, i8* %7, i32 %10, i8* %11)
-	%14 = load i32, i32* %2
-	%15 = getelementptr inbounds [2 x i8], [2 x i8]* @.str4, i32 0, i32 0
-	%16 = load i32, i32* %3
-	%17 = getelementptr inbounds [4 x i8], [4 x i8]* @.str5, i32 0, i32 0
-	%18 = load i32, i32* %2
+	%10 = load i32, i32* %4
+	%11 = add i32 %9, %10
+	%12 = getelementptr inbounds [2 x i8], [2 x i8]* @.str3, i32 0, i32 0
+	%13 = getelementptr inbounds [13 x i8], [13 x i8]* @.str4, i32 0, i32 0
+	%14 = call i32 (i8*, ...) @printf(i8* %13, i32 %5, i8* %6, i32 %7, i8* %8, i32 %11, i8* %12)
+	%15 = load i32, i32* %3
+	%16 = getelementptr inbounds [2 x i8], [2 x i8]* @.str5, i32 0, i32 0
+	%17 = load i32, i32* %4
+	%18 = getelementptr inbounds [4 x i8], [4 x i8]* @.str6, i32 0, i32 0
 	%19 = load i32, i32* %3
-	%20 = sub i32 %18, %19
-	%21 = getelementptr inbounds [2 x i8], [2 x i8]* @.str6, i32 0, i32 0
-	%22 = getelementptr inbounds [13 x i8], [13 x i8]* @.str25, i32 0, i32 0
-	%23 = call i32 (i8*, ...) @printf(i8* %22, i32 %14, i8* %15, i32 %16, i8* %17, i32 %20, i8* %21)
-	%24 = load i32, i32* %2
-	%25 = getelementptr inbounds [2 x i8], [2 x i8]* @.str7, i32 0, i32 0
-	%26 = load i32, i32* %3
-	%27 = getelementptr inbounds [4 x i8], [4 x i8]* @.str8, i32 0, i32 0
-	%28 = load i32, i32* %2
+	%20 = load i32, i32* %4
+	%21 = sub i32 %19, %20
+	%22 = getelementptr inbounds [2 x i8], [2 x i8]* @.str7, i32 0, i32 0
+	%23 = getelementptr inbounds [13 x i8], [13 x i8]* @.str8, i32 0, i32 0
+	%24 = call i32 (i8*, ...) @printf(i8* %23, i32 %15, i8* %16, i32 %17, i8* %18, i32 %21, i8* %22)
+	%25 = load i32, i32* %3
+	%26 = getelementptr inbounds [2 x i8], [2 x i8]* @.str9, i32 0, i32 0
+	%27 = load i32, i32* %4
+	%28 = getelementptr inbounds [4 x i8], [4 x i8]* @.str10, i32 0, i32 0
 	%29 = load i32, i32* %3
-	%30 = mul i32 %28, %29
-	%31 = getelementptr inbounds [2 x i8], [2 x i8]* @.str9, i32 0, i32 0
-	%32 = getelementptr inbounds [13 x i8], [13 x i8]* @.str26, i32 0, i32 0
-	%33 = call i32 (i8*, ...) @printf(i8* %32, i32 %24, i8* %25, i32 %26, i8* %27, i32 %30, i8* %31)
-	%34 = load i32, i32* %2
-	%35 = getelementptr inbounds [2 x i8], [2 x i8]* @.str10, i32 0, i32 0
-	%36 = load i32, i32* %3
-	%37 = getelementptr inbounds [4 x i8], [4 x i8]* @.str11, i32 0, i32 0
-	%38 = load i32, i32* %2
+	%30 = load i32, i32* %4
+	%31 = mul i32 %29, %30
+	%32 = getelementptr inbounds [2 x i8], [2 x i8]* @.str11, i32 0, i32 0
+	%33 = getelementptr inbounds [13 x i8], [13 x i8]* @.str12, i32 0, i32 0
+	%34 = call i32 (i8*, ...) @printf(i8* %33, i32 %25, i8* %26, i32 %27, i8* %28, i32 %31, i8* %32)
+	%35 = load i32, i32* %3
+	%36 = getelementptr inbounds [2 x i8], [2 x i8]* @.str13, i32 0, i32 0
+	%37 = load i32, i32* %4
+	%38 = getelementptr inbounds [4 x i8], [4 x i8]* @.str14, i32 0, i32 0
 	%39 = load i32, i32* %3
-	%40 = udiv i32 %38, %39
-	%41 = getelementptr inbounds [2 x i8], [2 x i8]* @.str12, i32 0, i32 0
-	%42 = getelementptr inbounds [13 x i8], [13 x i8]* @.str27, i32 0, i32 0
-	%43 = call i32 (i8*, ...) @printf(i8* %42, i32 %34, i8* %35, i32 %36, i8* %37, i32 %40, i8* %41)
-	%44 = load i32, i32* %2
-	%45 = getelementptr inbounds [2 x i8], [2 x i8]* @.str13, i32 0, i32 0
-	%46 = getelementptr inbounds [4 x i8], [4 x i8]* @.str14, i32 0, i32 0
-	%47 = load i32, i32* %2
-	%48 = add i32 %47, 1
-	%49 = getelementptr inbounds [2 x i8], [2 x i8]* @.str15, i32 0, i32 0
-	%50 = getelementptr inbounds [13 x i8], [13 x i8]* @.str28, i32 0, i32 0
-	%51 = call i32 (i8*, ...) @printf(i8* %50, i32 %44, i8* %45, i32 1, i8* %46, i32 %48, i8* %49)
-	%52 = load i32, i32* %2
-	%53 = getelementptr inbounds [4 x i8], [4 x i8]* @.str16, i32 0, i32 0
-	%54 = load i32, i32* %2
-	%55 = getelementptr inbounds [2 x i8], [2 x i8]* @.str17, i32 0, i32 0
-	%56 = load i32, i32* %3
-	%57 = getelementptr inbounds [5 x i8], [5 x i8]* @.str18, i32 0, i32 0
-	%58 = load i32, i32* %2
-	%59 = load i32, i32* %2
+	%40 = load i32, i32* %4
+	%41 = udiv i32 %39, %40
+	%42 = getelementptr inbounds [2 x i8], [2 x i8]* @.str15, i32 0, i32 0
+	%43 = getelementptr inbounds [13 x i8], [13 x i8]* @.str16, i32 0, i32 0
+	%44 = call i32 (i8*, ...) @printf(i8* %43, i32 %35, i8* %36, i32 %37, i8* %38, i32 %41, i8* %42)
+	%45 = load i32, i32* %3
+	%46 = getelementptr inbounds [2 x i8], [2 x i8]* @.str17, i32 0, i32 0
+	%47 = getelementptr inbounds [4 x i8], [4 x i8]* @.str18, i32 0, i32 0
+	%48 = load i32, i32* %3
+	%49 = add i32 %48, 1
+	%50 = getelementptr inbounds [2 x i8], [2 x i8]* @.str19, i32 0, i32 0
+	%51 = getelementptr inbounds [13 x i8], [13 x i8]* @.str20, i32 0, i32 0
+	%52 = call i32 (i8*, ...) @printf(i8* %51, i32 %45, i8* %46, i32 1, i8* %47, i32 %49, i8* %50)
+	%53 = load i32, i32* %3
+	%54 = getelementptr inbounds [4 x i8], [4 x i8]* @.str21, i32 0, i32 0
+	%55 = load i32, i32* %3
+	%56 = getelementptr inbounds [2 x i8], [2 x i8]* @.str22, i32 0, i32 0
+	%57 = load i32, i32* %4
+	%58 = getelementptr inbounds [5 x i8], [5 x i8]* @.str23, i32 0, i32 0
+	%59 = load i32, i32* %3
 	%60 = load i32, i32* %3
-	%61 = add i32 %59, %60
-	%62 = mul i32 %58, %61
-	%63 = getelementptr inbounds [2 x i8], [2 x i8]* @.str19, i32 0, i32 0
-	%64 = getelementptr inbounds [17 x i8], [17 x i8]* @.str29, i32 0, i32 0
-	%65 = call i32 (i8*, ...) @printf(i8* %64, i32 %52, i8* %53, i32 %54, i8* %55, i32 %56, i8* %57, i32 %62, i8* %63)
-	%66 = load i32, i32* %2
-	%67 = getelementptr inbounds [4 x i8], [4 x i8]* @.str20, i32 0, i32 0
-	%68 = load i32, i32* %2
-	%69 = getelementptr inbounds [2 x i8], [2 x i8]* @.str21, i32 0, i32 0
-	%70 = load i32, i32* %3
-	%71 = getelementptr inbounds [5 x i8], [5 x i8]* @.str22, i32 0, i32 0
-	%72 = load i32, i32* %2
-	%73 = load i32, i32* %2
-	%74 = mul i32 %72, %73
-	%75 = load i32, i32* %3
-	%76 = add i32 %74, %75
-	%77 = getelementptr inbounds [2 x i8], [2 x i8]* @.str23, i32 0, i32 0
-	%78 = getelementptr inbounds [17 x i8], [17 x i8]* @.str30, i32 0, i32 0
-	%79 = call i32 (i8*, ...) @printf(i8* %78, i32 %66, i8* %67, i32 %68, i8* %69, i32 %70, i8* %71, i32 %76, i8* %77)
+	%61 = load i32, i32* %4
+	%62 = add i32 %60, %61
+	%63 = mul i32 %59, %62
+	%64 = getelementptr inbounds [2 x i8], [2 x i8]* @.str24, i32 0, i32 0
+	%65 = getelementptr inbounds [17 x i8], [17 x i8]* @.str25, i32 0, i32 0
+	%66 = call i32 (i8*, ...) @printf(i8* %65, i32 %53, i8* %54, i32 %55, i8* %56, i32 %57, i8* %58, i32 %63, i8* %64)
+	%67 = load i32, i32* %3
+	%68 = getelementptr inbounds [4 x i8], [4 x i8]* @.str26, i32 0, i32 0
+	%69 = load i32, i32* %3
+	%70 = getelementptr inbounds [2 x i8], [2 x i8]* @.str27, i32 0, i32 0
+	%71 = load i32, i32* %4
+	%72 = getelementptr inbounds [5 x i8], [5 x i8]* @.str28, i32 0, i32 0
+	%73 = load i32, i32* %3
+	%74 = load i32, i32* %3
+	%75 = mul i32 %73, %74
+	%76 = load i32, i32* %4
+	%77 = add i32 %75, %76
+	%78 = getelementptr inbounds [2 x i8], [2 x i8]* @.str29, i32 0, i32 0
+	%79 = getelementptr inbounds [17 x i8], [17 x i8]* @.str30, i32 0, i32 0
+	%80 = call i32 (i8*, ...) @printf(i8* %79, i32 %67, i8* %68, i32 %69, i8* %70, i32 %71, i8* %72, i32 %77, i8* %78)
 	ret void 
 }
 

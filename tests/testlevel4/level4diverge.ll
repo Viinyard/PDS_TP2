@@ -10,23 +10,23 @@ declare i32 @scanf(i8* noalias nocapture, ...)
 @.str2 = private unnamed_addr constant [3 x i8]c"%s\00", align 1
 
 define void @main() {
-entry:
-	%0 = getelementptr inbounds [5 x i8], [5 x i8]* @.str1, i32 0, i32 0
-	%1 = getelementptr inbounds [3 x i8], [3 x i8]* @.str2, i32 0, i32 0
-	%2 = call i32 (i8*, ...) @printf(i8* %1, i8* %0)
-	%3 = alloca i32
-	store i32 10, i32* %3
-	br label %entry1
-entry1:
-	%4 = load i32, i32* %3
-	%5 = sub i32 %4, 1
-	%6 = icmp ne i32 %5, 0
-	br i1 %6, label %do2, label %done3
-do2:
-	%7 = alloca i32
-	store i32 1, i32* %7
-	br label %entry1
-done3:
+; <label>:0
+	%1 = alloca i32
+	%2 = alloca i32
+	%3 = getelementptr inbounds [5 x i8], [5 x i8]* @.str1, i32 0, i32 0
+	%4 = getelementptr inbounds [3 x i8], [3 x i8]* @.str2, i32 0, i32 0
+	%5 = call i32 (i8*, ...) @printf(i8* %4, i8* %3)
+	store i32 10, i32* %1
+	br label %6
+; <label>:6
+	%7 = load i32, i32* %1
+	%8 = sub i32 %7, 1
+	%9 = icmp ne i32 %8, 0
+	br i1 %9, label %10, label %11
+; <label>:10
+	store i32 1, i32* %2
+	br label %6
+; <label>:11
 	ret void 
 }
 

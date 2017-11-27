@@ -10,10 +10,10 @@ declare i32 @scanf(i8* noalias nocapture, ...)
 @.str2 = private unnamed_addr constant [5 x i8]c"%s%d\00", align 1
 
 define void @main() {
-entry:
-	%0 = getelementptr inbounds [5 x i8], [5 x i8]* @.str1, i32 0, i32 0
-	%1 = getelementptr inbounds [5 x i8], [5 x i8]* @.str2, i32 0, i32 0
-	%2 = call i32 (i8*, ...) @printf(i8* %1, i8* %0, i32 1)
+; <label>:0
+	%1 = getelementptr inbounds [5 x i8], [5 x i8]* @.str1, i32 0, i32 0
+	%2 = getelementptr inbounds [5 x i8], [5 x i8]* @.str2, i32 0, i32 0
+	%3 = call i32 (i8*, ...) @printf(i8* %2, i8* %1, i32 1)
 	ret void 
 }
 

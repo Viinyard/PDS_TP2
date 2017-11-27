@@ -12,77 +12,77 @@ declare i32 @scanf(i8* noalias nocapture, ...)
 @.str4 = private unnamed_addr constant [11 x i8]c"%s%d%s%d%s\00", align 1
 
 define void @main() {
-entry:
-	%0 = alloca i32
-	%1 = alloca [11 x i32]
-	store i32 0, i32* %0
-	br label %entry1
-entry1:
-	%2 = load i32, i32* %0
-	%3 = sub i32 11, %2
-	%4 = icmp ne i32 %3, 0
-	br i1 %4, label %do2, label %done3
-do2:
-	%5 = load i32, i32* %0
-	%6 = getelementptr inbounds [11 x i32], [11 x i32]* %1, i32 0, i32 %5
-	%7 = load i32, i32* %0
-	%8 = call i32 @fact(i32 %7)
-	store i32 %8, i32* %6
-	%9 = load i32, i32* %0
-	%10 = add i32 %9, 1
-	store i32 %10, i32* %0
-	br label %entry1
-done3:
-	store i32 0, i32* %0
-	br label %entry4
-entry4:
-	%11 = load i32, i32* %0
-	%12 = sub i32 11, %11
-	%13 = icmp ne i32 %12, 0
-	br i1 %13, label %do5, label %done6
-do5:
-	%14 = getelementptr inbounds [3 x i8], [3 x i8]* @.str1, i32 0, i32 0
-	%15 = load i32, i32* %0
-	%16 = getelementptr inbounds [5 x i8], [5 x i8]* @.str2, i32 0, i32 0
-	%17 = load i32, i32* %0
-	%18 = getelementptr inbounds [11 x i32], [11 x i32]* %1, i32 0, i32 %17
-	%19 = load i32, i32* %18
-	%20 = getelementptr inbounds [2 x i8], [2 x i8]* @.str3, i32 0, i32 0
-	%21 = getelementptr inbounds [11 x i8], [11 x i8]* @.str4, i32 0, i32 0
-	%22 = call i32 (i8*, ...) @printf(i8* %21, i8* %14, i32 %15, i8* %16, i32 %19, i8* %20)
-	%23 = load i32, i32* %0
-	%24 = add i32 %23, 1
-	store i32 %24, i32* %0
-	br label %entry4
-done6:
+; <label>:0
+	%1 = alloca i32
+	%2 = alloca [11 x i32]
+	store i32 0, i32* %1
+	br label %3
+; <label>:3
+	%4 = load i32, i32* %1
+	%5 = sub i32 11, %4
+	%6 = icmp ne i32 %5, 0
+	br i1 %6, label %7, label %14
+; <label>:7
+	%8 = load i32, i32* %1
+	%9 = call i32 @fact(i32 %8)
+	%10 = load i32, i32* %1
+	%11 = getelementptr inbounds [11 x i32], [11 x i32]* %2, i32 0, i32 %10
+	store i32 %9, i32* %11
+	%12 = load i32, i32* %1
+	%13 = add i32 %12, 1
+	store i32 %13, i32* %1
+	br label %3
+; <label>:14
+	store i32 0, i32* %1
+	br label %15
+; <label>:15
+	%16 = load i32, i32* %1
+	%17 = sub i32 11, %16
+	%18 = icmp ne i32 %17, 0
+	br i1 %18, label %19, label %31
+; <label>:19
+	%20 = getelementptr inbounds [3 x i8], [3 x i8]* @.str1, i32 0, i32 0
+	%21 = load i32, i32* %1
+	%22 = getelementptr inbounds [5 x i8], [5 x i8]* @.str2, i32 0, i32 0
+	%23 = load i32, i32* %1
+	%24 = getelementptr inbounds [11 x i32], [11 x i32]* %2, i32 0, i32 %23
+	%25 = load i32, i32* %24
+	%26 = getelementptr inbounds [2 x i8], [2 x i8]* @.str3, i32 0, i32 0
+	%27 = getelementptr inbounds [11 x i8], [11 x i8]* @.str4, i32 0, i32 0
+	%28 = call i32 (i8*, ...) @printf(i8* %27, i8* %20, i32 %21, i8* %22, i32 %25, i8* %26)
+	%29 = load i32, i32* %1
+	%30 = add i32 %29, 1
+	store i32 %30, i32* %1
+	br label %15
+; <label>:31
 	ret void 
 }
 
 define i32 @fact(i32) {
-entry:
-	%1 = alloca i32
-	store i32 %0, i32* %1
+; <label>:1
 	%2 = alloca i32
 	%3 = alloca i32
-	%4 = load i32, i32* %1
-	%5 = icmp ne i32 %4, 0
-	br i1 %5, label %then7, label %else8
-then7:
-	%6 = load i32, i32* %1
-	%7 = load i32, i32* %1
-	%8 = sub i32 %7, 1
-	%9 = call i32 @fact(i32 %8)
-	%10 = mul i32 %6, %9
-	store i32 %10, i32* %3
-	br label %fi9
-else8:
-	store i32 1, i32* %3
-	br label %fi9
-fi9:
-	%11 = load i32, i32* %3
-	store i32 %11, i32* %2
-	%12 = load i32, i32* %2
-	ret i32 %12
+	%4 = alloca i32
+	store i32 %0, i32* %2
+	%5 = load i32, i32* %2
+	%6 = icmp ne i32 %5, 0
+	br i1 %6, label %7, label %13
+; <label>:7
+	%8 = load i32, i32* %2
+	%9 = load i32, i32* %2
+	%10 = sub i32 %9, 1
+	%11 = call i32 @fact(i32 %10)
+	%12 = mul i32 %8, %11
+	store i32 %12, i32* %4
+	br label %14
+; <label>:13
+	store i32 1, i32* %4
+	br label %14
+; <label>:14
+	%15 = load i32, i32* %4
+	store i32 %15, i32* %3
+	%16 = load i32, i32* %3
+	ret i32 %16
 }
 
 

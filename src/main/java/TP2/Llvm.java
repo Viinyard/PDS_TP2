@@ -1,6 +1,6 @@
 package TP2;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
@@ -9,32 +9,75 @@ public class Llvm {
 	static int lvl = 0;
 
 	public static class IR {
-		List<Instruction> header;
-		List<Instruction> code;
+		LinkedList<Instruction> global;
+		LinkedList<Instruction> code;
+		LinkedList<Instruction> header;
 
-		public IR(List<Instruction> header, List<Instruction> code) {
-			this.header = header;
+		public IR(LinkedList<Instruction> global, LinkedList<Instruction> code, LinkedList<Instruction> header) {
+			this.global = global;
 			this.code = code;
+			this.header = header;
 		}
 
+		public IR() {
+			this(Llvm.empty(), Llvm.empty(), Llvm.empty());
+		}
+		
+		public IR appendGlobal(Instruction inst) {
+			this.global.add(inst);
+			return this;
+		}
+		
+		
 		public IR append(IR other) {
+			this.global.addAll(other.global);
 			this.header.addAll(other.header);
 			this.code.addAll(other.code);
 			return this;
 		}
 
-		public IR appendOuter(IR other) {
-			this.header.addAll(other.header);
-			this.header.addAll(other.code);
-			return this;
-		}
 
+		public void linkFonction() {
+			LinkedList<Instruction> fonction = new LinkedList<Instruction>();
+			fonction.addAll(this.header);
+			fonction.addAll(this.code);
+			
+			Instruction parent = null;
+			
+			for(Instruction i : fonction) {
+				i.setParent(parent);
+				parent = i;
+			}
+			
+			this.header.clear();
+			this.code = fonction;
+		}
+		
 		public IR appendCode(Instruction inst) {
+//			if(this.code.isEmpty()) {
+//				if(!this.header.isEmpty()) {
+//					inst.setParent(this.header.getLast());
+//				}
+//			} else {
+//				inst.setParent(this.code.getLast());
+//			}
 			this.code.add(inst);
 			return this;
 		}
-
+		
 		public IR appendHeader(Instruction inst) {
+//			Instruction parent = null;
+//			if(!this.header.isEmpty()) {
+//				parent = this.header.getLast();
+//			}
+//			inst.setParent(parent);
+//			Instruction soon = null;
+//			if(!this.code.isEmpty()) {
+//				soon = this.code.getFirst();
+//			}
+//			if(soon != null) {
+//				soon.setParent(inst);
+//			}
 			this.header.add(inst);
 			return this;
 		}
@@ -45,10 +88,12 @@ public class Llvm {
 					+ "declare i32 @printf(i8* noalias nocapture, ...)\n"
 					+ "declare i32 @scanf(i8* noalias nocapture, ...)\n" + "\n; Actual code begins\n\n");
 
-			for (Instruction inst : this.header)
+			for (Instruction inst : this.global)
 				r.append(inst);
 
 			r.append("\n");
+			
+			
 
 			for (Instruction inst : this.code)
 				r.append(inst);
@@ -57,16 +102,31 @@ public class Llvm {
 		}
 	}
 
-	public static List<Instruction> empty() {
-		return new ArrayList<Instruction>();
+	public static LinkedList<Instruction> empty() {
+		return new LinkedList<Instruction>();
 	}
-
+	
 	public static abstract class Instruction {
 
+		private Instruction pred = null;
 		protected int level;
-
-		public Instruction() {
+		int cpt;
+		
+		public Instruction(Variable result, int cpt) {
 			this.level = Llvm.lvl;
+			this.cpt = cpt;
+			if(result != null) result.setParent(this);
+		}
+		
+		public void setParent(Instruction parent) {
+			this.pred = parent;
+		}
+		
+		public int getCpt() {
+			if(this.pred == null) {
+				return -1;
+			}
+			return this.pred.getCpt() + this.cpt;
 		}
 
 		public abstract String toString();
@@ -78,12 +138,13 @@ public class Llvm {
 
 	// OK
 	public static class ArrayElement extends Instruction {
-
+		
 		private Variable result, variable, start, index;
 
 		public ArrayElement(Variable result, Variable variable, Variable start, Variable index) {
-			super();
+			super(result, 1);
 			assert (variable.type instanceof PointerType);
+			result.setParent(this);
 			this.result = result;
 			this.variable = variable;
 			this.start = start;
@@ -92,7 +153,7 @@ public class Llvm {
 
 		@Override
 		public String toString() {
-			StringBuilder ret = new StringBuilder(Utils.indent(this.level) + this.result.ident + " = getelementptr inbounds "
+			StringBuilder ret = new StringBuilder(Utils.indent(this.level) + this.result.getValue() + " = getelementptr inbounds "
 					+ ((PointerType) this.variable.type).type + ", " + this.variable);
 			if(this.start != null)  {
 				ret.append(", " + this.start); 
@@ -108,14 +169,14 @@ public class Llvm {
 		private List<Variable> args;
 
 		public Fonction(Variable fonction, List<Variable> args) {
-			super();
+			super(null, 1);
 			this.fonction = fonction;
 			this.args = args;
 		}
 
 		public String toString() {
 			StringBuilder ret = new StringBuilder(
-					Utils.indent(this.level) + "define " + this.fonction.type + " " + this.fonction.ident + "(");
+					Utils.indent(this.level) + "define " + this.fonction.type + " " + this.fonction.getValue() + "(");
 
 			for (int i = 0; i < this.args.size(); i++) {
 				ret.append(this.args.get(i).type);
@@ -132,7 +193,7 @@ public class Llvm {
 	public static class OpenBlock extends Instruction {
 
 		public OpenBlock() {
-			super();
+			super(null, 0);
 			Llvm.lvl++;
 		}
 
@@ -146,7 +207,7 @@ public class Llvm {
 	public static class OpenLabelBlock extends Instruction {
 
 		public OpenLabelBlock() {
-			super();
+			super(null, 0);
 			Llvm.lvl++;
 		}
 
@@ -160,7 +221,7 @@ public class Llvm {
 	public static class CloseLabelBlock extends Instruction {
 
 		public CloseLabelBlock() {
-			super();
+			super(null, 0);
 			Llvm.lvl--;
 		}
 
@@ -174,6 +235,7 @@ public class Llvm {
 	public static class CloseBlock extends Instruction {
 
 		public CloseBlock() {
+			super(null, 0);
 			this.level = --Llvm.lvl;
 		}
 
@@ -184,6 +246,18 @@ public class Llvm {
 
 	}
 
+	public static class Argument extends Instruction {
+
+		public Argument(Variable arg) {
+			super(arg, 1);
+		}
+		
+		@Override
+		public String toString() {
+			return ""; // nothing to print
+		}
+	}
+	
 	// OK
 	public static class CallFonction extends Instruction {
 
@@ -197,10 +271,10 @@ public class Llvm {
 		}
 
 		public CallFonction(Variable fonction, String cast, Variable result, List<Variable> args) {
-			super();
+			super(result, (result == null) ? 0 : 1);
 			this.result = Optional.ofNullable(result);
 			if(this.result.isPresent()) {
-				assert (this.fonction.type.equals(this.result.get().type));
+				this.result.get().setParent(this);
 			}
 			this.fonction = fonction;
 			this.args = args;
@@ -212,7 +286,7 @@ public class Llvm {
 			StringBuilder ret = new StringBuilder();
 			ret.append(Utils.indent(this.level));
 			
-			this.result.ifPresent(r -> ret.append(r.ident + " = "));
+			this.result.ifPresent(r -> ret.append(r.getValue() + " = "));
 
 			ret.append("call ");
 
@@ -220,7 +294,7 @@ public class Llvm {
 			if(this.cast.length() > 0) {
 				ret.append(this.cast + " ");
 			}
-			ret.append(this.fonction.ident + "(");
+			ret.append(this.fonction.getValue() + "(");
 
 			for (int i = 0; i < this.args.size(); i++) {
 				ret.append(this.args.get(i));
@@ -241,7 +315,7 @@ public class Llvm {
 		private Variable variable;
 
 		public Return(Variable variable) {
-			super();
+			super(null, 0);
 			this.variable = variable;
 		}
 
@@ -257,18 +331,19 @@ public class Llvm {
 	// OK
 	public static class Load extends Instruction {
 
-		private Variable pointer, value;
+		private Variable pointer, result;
 
-		public Load(Variable pointer, Variable value) {
-			super();
-			assert (pointer.type instanceof PointerType);
+		public Load(Variable pointer, Variable result) {
+			super(result, 1);
+			
 			this.pointer = pointer;
-			this.value = value;
+			this.result = result;
+			
 		}
 
 		@Override
 		public String toString() {
-			return Utils.indent(this.level) + this.value.ident + " = load " + this.value.type + ", " + this.pointer
+			return Utils.indent(this.level) + this.result.getValue() + " = load " + this.result.type + ", " + this.pointer.type + " "+ this.pointer.getValue()
 					+ "\n";
 		}
 	}
@@ -276,20 +351,21 @@ public class Llvm {
 	// OK
 	public static class StringConstant extends Instruction {
 
-		Variable variable;
+		Variable result;
 		String value;
 
-		public StringConstant(Variable variable, String value) {
-			super();
-			assert (variable.type instanceof PointerType);
-			this.variable = variable;
+		public StringConstant(Variable result, String value) {
+			super(result, 0);
+			assert (result.type instanceof PointerType);
+			this.result = result;
 			this.value = value;
+			
 		}
 
 		@Override
 		public String toString() {
-			return this.variable.ident + " = private unnamed_addr constant " + ((PointerType) this.variable.type).type
-					+ "c" + this.value + ", align " + this.variable.type.align + "\n";
+			return this.result.getValue() + " = private unnamed_addr constant " + ((PointerType) this.result.type).type
+					+ "c" + this.value + ", align " + this.result.type.align + "\n";
 		}
 	}
 
@@ -297,17 +373,33 @@ public class Llvm {
 	public static class Variable extends Instruction {
 
 		Type type;
-		String ident;
-
-		public Variable(int scope, Type type, String ident) {
-			super();
+//		String indent; // TODO
+		private String value;
+		private int scope;
+		
+		private static final String[] scope_token = { "%", "@", "" };
+		
+		public Variable(int scope, Type type, String value) {
+			super(null, 0);
 			this.type = type;
-			this.ident = ident;
+			this.scope = scope;
+			if(value != null) { 
+				this.value = Variable.scope_token[this.scope] + value;
+			} else {
+				this.value = value;
+			}
+		}
+		
+		public String getValue() {
+			if(this.value == null) {
+				this.value = Variable.scope_token[this.scope] + this.getCpt();
+			}
+			return this.value;
 		}
 
 		@Override
 		public String toString() {
-			return this.type + " " + this.ident;
+			return this.type + " " + ((this.value == null) ? "" : this.value);
 		}
 	}
 
@@ -317,15 +409,16 @@ public class Llvm {
 		Variable variable, value;
 
 		public Affectation(Variable variable, Variable value) {
-			super();
+			//super(value, 1); // TODO
+			super(null, 0);
 			assert (variable.type instanceof PointerType);
 			this.variable = variable;
 			this.value = value;
 		}
-
+		
 		@Override
 		public String toString() {
-			return Utils.indent(this.level) + "store " + this.value + ", " + this.variable + "\n";
+			return Utils.indent(this.level) + "store " + this.value.type + " " + this.value.getValue() + ", " + this.variable.type + " " + this.variable.getValue() + "\n";
 		}
 
 	}
@@ -336,7 +429,7 @@ public class Llvm {
 		private Variable variable;
 
 		public Instanciation(Variable variable) {
-			super();
+			super(variable, 1);
 			assert (variable.type instanceof PointerType);
 			this.variable = variable;
 		}
@@ -344,7 +437,7 @@ public class Llvm {
 		@Override
 		public String toString() {
 			PointerType type = (PointerType) this.variable.type;
-			return Utils.indent(this.level) + this.variable.ident + " = alloca " + type.type + "\n";
+			return Utils.indent(this.level) + this.variable.getValue() + " = alloca " + type.type + "\n";
 		}
 	}
 
@@ -355,14 +448,14 @@ public class Llvm {
 	// OK
 	public static class ICMP extends Instruction {
 
-		private Variable value, left, right;
+		private Variable result, left, right;
 		private Cond op;
 
-		public ICMP(Variable value, Variable left, Cond op, Variable right) {
-			super();
-			assert (value.type instanceof BooleanType); // can accept boolean vector too : not implemented yet
+		public ICMP(Variable result, Variable left, Cond op, Variable right) {
+			super(result, 1);
+			assert (result.type instanceof BooleanType); // can accept boolean vector too : not implemented yet
 			assert (left.type.equals(right.type));
-			this.value = value;
+			this.result = result;
 			this.left = left;
 			this.op = op;
 			this.right = right;
@@ -370,8 +463,8 @@ public class Llvm {
 
 		@Override
 		public String toString() {
-			return Utils.indent(this.level) + this.value.ident + " = icmp " + this.op + " " + this.left + ", "
-					+ this.right.ident + "\n";
+			return Utils.indent(this.level) + this.result.getValue() + " = icmp " + this.op + " " + this.left.type + " " + this.left.getValue() + ", "
+					+ this.right.getValue() + "\n";
 		}
 	}
 
@@ -381,14 +474,14 @@ public class Llvm {
 		Variable label;
 
 		public BR(Variable label) {
-			super();
+			super(null, 0);
 			assert (label.type instanceof LabelType);
 			this.label = label;
 		}
 
 		@Override
 		public String toString() {
-			return Utils.indent(this.level) + "br " + this.label + "\n";
+			return Utils.indent(this.level) + "br " + this.label.type + " " + this.label.getValue() + "\n";
 		}
 	}
 
@@ -398,14 +491,14 @@ public class Llvm {
 		private Variable label;
 
 		public Label(Variable label) {
-			super();
+			super(label, 1);
 			assert (label.type instanceof LabelType);
 			this.label = label;
 		}
 
 		@Override
 		public String toString() {
-			return Utils.indent(this.level - 1) + this.label.ident.substring(1) + ":" + "\n";
+			return Utils.indent(this.level - 1) + "; <"+this.label.type+">" + label.getValue().replaceFirst("%", ":") + "\n";
 		}
 	}
 
@@ -415,7 +508,7 @@ public class Llvm {
 		private Variable cond, labelTrue, labelFalse;
 
 		public BRCond(Variable cond, Variable labelTrue, Variable labelFalse) {
-			super();
+			super(null, 0);
 			assert (cond.type instanceof BooleanType);
 			assert (labelTrue.type instanceof LabelType);
 			assert (labelFalse.type instanceof LabelType);
@@ -426,7 +519,7 @@ public class Llvm {
 
 		@Override
 		public String toString() {
-			return Utils.indent(this.level) + "br " + this.cond + ", " + this.labelTrue + ", " + this.labelFalse + "\n";
+			return Utils.indent(this.level) + "br " + this.cond + ", " + this.labelTrue.type + " " + this.labelTrue.getValue() + ", " + this.labelFalse.type + " " + this.labelFalse.getValue() + "\n";
 		}
 	}
 
@@ -500,76 +593,76 @@ public class Llvm {
 	// OK
 	public static class Div extends Instruction {
 
-		private Variable variable;
-		private String left, right;
+		private Variable result;
+		private Variable left, right;
 
-		public Div(Variable variable, String left, String right) {
-			super();
-			this.variable = variable;
+		public Div(Variable result, Variable left, Variable right) {
+			super(result, 1);
+			this.result = result;
 			this.left = left;
 			this.right = right;
 		}
 
 		public String toString() {
-			return Utils.indent(this.level) + this.variable.ident + " = udiv " + this.variable.type + " " + this.left
-					+ ", " + this.right + "\n";
+			return Utils.indent(this.level) + this.result.getValue() + " = udiv " + this.result.type + " " + this.left.getValue()
+					+ ", " + this.right.getValue() + "\n";
 		}
 	}
 
 	// OK
 	public static class Add extends Instruction {
 
-		private Variable variable;
-		private String left, right;
+		private Variable result;
+		private Variable left, right;
 
-		public Add(Variable variable, String left, String right) {
-			super();
-			this.variable = variable;
+		public Add(Variable result, Variable left, Variable right) {
+			super(result, 1);
+			this.result = result;
 			this.left = left;
 			this.right = right;
 		}
 
 		public String toString() {
-			return Utils.indent(this.level) + this.variable.ident + " = add " + this.variable.type + " " + this.left
-					+ ", " + this.right + "\n";
+			return Utils.indent(this.level) + this.result.getValue() + " = add " + this.result.type + " " + this.left.getValue()
+					+ ", " + this.right.getValue()+ "\n";
 		}
 	}
 
 	// OK
 	public static class Mul extends Instruction {
 
-		private Variable variable;
-		private String left, right;
+		private Variable result;
+		private Variable left, right;
 
-		public Mul(Variable variable, String left, String right) {
-			super();
-			this.variable = variable;
+		public Mul(Variable result, Variable left, Variable right) {
+			super(result, 1);
+			this.result = result;
 			this.left = left;
 			this.right = right;
 		}
 
 		public String toString() {
-			return Utils.indent(this.level) + this.variable.ident + " = mul " + this.variable.type + " " + this.left
-					+ ", " + this.right + "\n";
+			return Utils.indent(this.level) + this.result.getValue() + " = mul " + this.result.type + " " + this.left.getValue()
+					+ ", " + this.right.getValue() + "\n";
 		}
 	}
 
 	// OK
 	public static class Sub extends Instruction {
 
-		private Variable variable;
-		private String left, right;
+		private Variable result;
+		private Variable left, right;
 
-		public Sub(Variable variable, String left, String right) {
-			super();
-			this.variable = variable;
+		public Sub(Variable result, Variable left, Variable right) {
+			super(result, 1);
+			this.result = result;
 			this.left = left;
 			this.right = right;
 		}
 
 		public String toString() {
-			return Utils.indent(this.level) + this.variable.ident + " = sub " + this.variable.type + " " + this.left
-					+ ", " + this.right + "\n";
+			return Utils.indent(this.level) + this.result.getValue() + " = sub " + this.result.type + " " + this.left.getValue()
+					+ ", " + this.right.getValue() + "\n";
 		}
 	}
 
@@ -675,9 +768,9 @@ public class Llvm {
 	public static class ArrayType extends Type {
 
 		public Type type;
-		public String size;
+		public int size;
 
-		public ArrayType(Type type, String size) {
+		public ArrayType(Type type, int size) {
 			super(type.align);
 			assert (type instanceof PointerType);
 			this.type = type;

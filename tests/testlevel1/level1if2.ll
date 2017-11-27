@@ -8,20 +8,19 @@ declare i32 @scanf(i8* noalias nocapture, ...)
 
 
 define i32 @main() {
-entry:
-	%0 = alloca i32
-	%1 = icmp ne i32 1, 0
-	br i1 %1, label %then1, label %else2
-then1:
-	store i32 1, i32* %0
-	br label %fi3
-else2:
-	store i32 0, i32* %0
-	br label %fi3
-fi3:
-	%2 = load i32, i32* %0
-	ret i32 %2
-	ret i32 0
+; <label>:0
+	%1 = alloca i32
+	%2 = icmp ne i32 1, 0
+	br i1 %2, label %3, label %4
+; <label>:3
+	store i32 1, i32* %1
+	br label %5
+; <label>:4
+	store i32 0, i32* %1
+	br label %5
+; <label>:5
+	%6 = load i32, i32* %1
+	ret i32 %6
 }
 
 
